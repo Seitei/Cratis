@@ -34,7 +34,7 @@ package
 		
 		private function onAdded(e:Event):void {
 			
-			//teh game assets
+			//the game assets
 			_assetManager = new AssetManager();
 			_assetManager.enqueue(Assets.stringAssets);
 			_assetManager.loadQueue(onProgress);
