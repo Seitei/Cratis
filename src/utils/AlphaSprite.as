@@ -181,7 +181,7 @@ package utils
 			
 			if(!data) return;
 			
-			//left/right
+			//left/right/midx
 			if(data.axis == 0){
 							
 				if(!_snappedX){
@@ -200,7 +200,7 @@ package utils
 				}
 			}
 			
-			//top/bottom
+			//top/bottom/midy
 			if(data.axis == 1){
 				
 				if(!_snappedY){
@@ -217,7 +217,7 @@ package utils
 					_snappedY = false;
 				}
 			}
-			
+		
 			drawGuide(data);
 			
 		}
@@ -225,10 +225,10 @@ package utils
 		
 		private function checkSnap(selectedDO:DisplayObject):Object {
 			
-			var sideNames:Array = [["left", "right"], ["top", "bottom"]];
 			var sDORect:Rectangle = selectedDO.getBounds(selectedDO.parent);
-			var sDOSides:Array = [[sDORect.left, sDORect.right], [sDORect.top, sDORect.bottom]];
-			
+			var sDOSides:Array = [[sDORect.left, sDORect.right, sDORect.left + selectedDO.width / 2], 
+								  [sDORect.top, sDORect.bottom, sDORect.top + selectedDO.height / 2]];
+				
 			for(var i:int = 0; i < _displayObjectsArray.length; i++){
 				
 				var dO:DisplayObject = _displayObjectsArray[i];
@@ -237,8 +237,9 @@ package utils
 					continue;
 				
 				var dORect:Rectangle = dO.getBounds(dO.parent);
-				var dOSides:Array = [[dORect.left, dORect.right], [dORect.top, dORect.bottom]]
-				
+				var dOSides:Array = [[dORect.left, dORect.right, dORect.left + dO.width / 2],
+									 [dORect.top, dORect.bottom, dORect.top + dO.height / 2]];
+								
 				for(var axisI:int = 0; axisI < sDOSides.length; axisI ++){
 					
 					for(var sDOSidesI:int = 0; sDOSidesI < sDOSides[axisI].length; sDOSidesI ++){
