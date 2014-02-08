@@ -86,7 +86,7 @@ package game
 			
 			//background
 			var bgImage:Image = new Image(_assetManager.getTexture("background"));
-			bgImage.name = "main_background";
+			//bgImage.name = "main_background";
 			addChild(bgImage);
 			
 			_myAttacks = new Array();
@@ -95,11 +95,11 @@ package game
 			
 			_attackedTiles = new Array();
 			
-			var testObject:Quad = new Quad(TILE_SIZE, TILE_SIZE, Color.GRAY); 
+			var testObject:Quad = new Quad(TILE_SIZE * 2, TILE_SIZE * 2, Color.GRAY); 
 			testObject.name = "to1";
 			addChild(testObject);
 			
-			var testObject2:Quad = new Quad(TILE_SIZE * 2, TILE_SIZE * 2, Color.RED);
+			var testObject2:Quad = new Quad(TILE_SIZE * 5, TILE_SIZE * 3, Color.RED);
 			testObject2.name = "to2";
 			addChild(testObject2);
 			

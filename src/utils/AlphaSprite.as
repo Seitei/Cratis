@@ -25,7 +25,7 @@ package utils
 		private var _selectionQuad:Sprite;
 		private var _doContainer:DisplayObjectContainer;
 		private var _displayObjectsArray:Array;
-		private static var THRESHOLD:int = 3;
+		private static var THRESHOLD:int = 5;
 		private var _verticalGuide:Quad;
 		private var _horizontalGuide:Quad;
 		private var _thresholdCounterX:int;
@@ -34,6 +34,8 @@ package utils
 		private var _snappedY:Boolean;
 		private var _deltaX:int;
 		private var _deltaY:int;
+		private var _snapObject:Object;
+		private var _shiftTouch:Point;
 		
 		public function AlphaSprite()
 		{
@@ -103,11 +105,11 @@ package utils
 				_deltaY = movedTouch.getMovement(displayObject).y;
 				
 				if(!_snappedX){
-					displayObject.x += _deltaX;
+					displayObject.x = movedTouch.getLocation(displayObject.parent).x - _shiftTouch.x; 
 				}
 				
 				if(!_snappedY){
-					displayObject.y += _deltaY;
+					displayObject.y = movedTouch.getLocation(displayObject.parent).y - _shiftTouch.y;
 				}
 				
 				snap(checkSnap(displayObject), _deltaX, _deltaY);
@@ -116,6 +118,8 @@ package utils
 			
 			//select
 			if(beganTouch){
+				
+				_shiftTouch = beganTouch.getLocation(displayObject);
 				
 			}
 			
@@ -132,20 +136,20 @@ package utils
 		private function drawGuide(data:Object):void {
 			
 			//vertical axis
-			if(data.axis == 0 && _snappedX){
+			if(data.axisX && _snappedX){
 				
-				_verticalGuide.x = data.axisValue;
+				_verticalGuide.x = data.axisX.axisValue;
 				_verticalGuide.visible = true;
 				
-				if(data.selectedDO.y - data.dObject.y > 0){
+				if(data.selectedDO.y - data.axisX.dObject.y > 0){
 					
-					_verticalGuide.y = data.dObject.y;
-					_verticalGuide.height = data.selectedDO.y - data.dObject.y + data.selectedDO.width;    	
+					_verticalGuide.y = data.axisX.dObject.y;
+					_verticalGuide.height = data.selectedDO.y - data.axisX.dObject.y + data.selectedDO.height;    	
 						
 				}
 				else {
 					_verticalGuide.y = data.selectedDO.y;
-					_verticalGuide.height = -(data.selectedDO.y - data.dObject.y) + data.dObject.width;  
+					_verticalGuide.height = -(data.selectedDO.y - data.axisX.dObject.y) + data.axisX.dObject.height;  
 				}
 			}
 			else {
@@ -154,20 +158,20 @@ package utils
 				
 			
 			//horitonzal axis
-			if(data.axis == 1 && _snappedY){
+			if(data.axisY && _snappedY){
 				
-				_horizontalGuide.y = data.axisValue;
+				_horizontalGuide.y = data.axisY.axisValue;
 				_horizontalGuide.visible = true;
 				
-				if(data.selectedDO.x - data.dObject.x > 0){
+				if(data.selectedDO.x - data.axisY.dObject.x > 0){
 					
-					_horizontalGuide.x = data.dObject.x;
-					_horizontalGuide.width = data.selectedDO.x - data.dObject.x + data.selectedDO.height;    	
+					_horizontalGuide.x = data.axisY.dObject.x;
+					_horizontalGuide.width = data.selectedDO.x - data.axisY.dObject.x + data.selectedDO.width;    	
 					
 				}
 				else {
 					_horizontalGuide.x = data.selectedDO.x;
-					_horizontalGuide.width = -(data.selectedDO.x - data.dObject.x) + data.dObject.height;  
+					_horizontalGuide.width = -(data.selectedDO.x - data.axisY.dObject.x) + data.axisY.dObject.width;  
 				}
 			}
 			else {
@@ -182,18 +186,20 @@ package utils
 			if(!data) return;
 			
 			//left/right/midx
-			if(data.axis == 0){
+			if(data.axisX){
 							
 				if(!_snappedX){
-					data.selectedDO.x -= data.deltaValue;
+					data.selectedDO.x -= data.axisX.deltaValue;
 					_snappedX = true;		
 				}
 				else {
 					_thresholdCounterX += deltaX;
 				}
 				
-				if(Math.abs(_thresholdCounterX) >= THRESHOLD){
-					data.selectedDO.x += _thresholdCounterX;
+				if(Math.abs(_thresholdCounterX) >= THRESHOLD * 2){
+					trace(_thresholdCounterX / 2);
+					data.selectedDO.x += _thresholdCounterX / 2;
+					
 					_thresholdCounterX = 0;					
 					_snappedX = false;
 					
@@ -201,18 +207,18 @@ package utils
 			}
 			
 			//top/bottom/midy
-			if(data.axis == 1){
+			if(data.axisY){
 				
 				if(!_snappedY){
-					data.selectedDO.y -= data.deltaValue;
+					data.selectedDO.y -= data.axisY.deltaValue;
 					_snappedY = true;					
 				}
 				else {
 					_thresholdCounterY += deltaY;
 				}
 				
-				if(Math.abs(_thresholdCounterY) >= THRESHOLD){
-					data.selectedDO.y += _thresholdCounterY;
+				if(Math.abs(_thresholdCounterY) >= THRESHOLD * 2){
+					data.selectedDO.y += _thresholdCounterY / 2;
 					_thresholdCounterY = 0;					
 					_snappedY = false;
 				}
@@ -229,6 +235,8 @@ package utils
 			var sDOSides:Array = [[sDORect.left, sDORect.right, sDORect.left + selectedDO.width / 2], 
 								  [sDORect.top, sDORect.bottom, sDORect.top + selectedDO.height / 2]];
 				
+			_snapObject = {"selectedDO": selectedDO};
+			
 			for(var i:int = 0; i < _displayObjectsArray.length; i++){
 				
 				var dO:DisplayObject = _displayObjectsArray[i];
@@ -240,23 +248,41 @@ package utils
 				var dOSides:Array = [[dORect.left, dORect.right, dORect.left + dO.width / 2],
 									 [dORect.top, dORect.bottom, dORect.top + dO.height / 2]];
 								
-				for(var axisI:int = 0; axisI < sDOSides.length; axisI ++){
+				
+				//check x axis
+				for(var sDOSidesI:int = 0; sDOSidesI < sDOSides[0].length; sDOSidesI ++){
 					
-					for(var sDOSidesI:int = 0; sDOSidesI < sDOSides[axisI].length; sDOSidesI ++){
-						
-						for(var dOSideI:int = 0; dOSideI < dOSides[axisI].length; dOSideI ++){
-								
-							if(Math.abs(sDOSides[axisI][sDOSidesI] - dOSides[axisI][dOSideI]) <= THRESHOLD){
-								
-								return {"selectedDO": selectedDO, "dObject": dO, "axis": axisI, "deltaValue": sDOSides[axisI][sDOSidesI] - dOSides[axisI][dOSideI], "axisValue": dOSides[axisI][dOSideI]};
-								
-							}
-						}	
-					}
+					for(var dOSideI:int = 0; dOSideI < dOSides[0].length; dOSideI ++){
+							
+						if(Math.abs(sDOSides[0][sDOSidesI] - dOSides[0][dOSideI]) <= THRESHOLD){
+							
+							_snapObject.axisX = {"dObject": dO, "axis": 0, "deltaValue": sDOSides[0][sDOSidesI] - dOSides[0][dOSideI], "axisValue": dOSides[0][dOSideI]};
+							continue;
+							
+						}
+					}	
 				}
+				
+				//check y axis
+				for(var sDOSidesJ:int = 0; sDOSidesJ < sDOSides[1].length; sDOSidesJ ++){
+						
+					for(var dOSideJ:int = 0; dOSideJ < dOSides[1].length; dOSideJ ++){
+						
+						if(Math.abs(sDOSides[1][sDOSidesJ] - dOSides[1][dOSideJ]) <= THRESHOLD){
+							
+							_snapObject.axisY = {"dObject": dO, "axis": 1, "deltaValue": sDOSides[1][sDOSidesJ] - dOSides[1][dOSideJ], "axisValue": dOSides[1][dOSideJ]};
+							continue;
+							
+						}
+					}	
+				}
+				
 			}	
 			
-			return null;
+			if(!_snapObject.axisX && !_snapObject.axisY)
+				return null;
+			else
+				return _snapObject;
 			
 		}
 			
