@@ -5,12 +5,14 @@ package utils
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.net.SharedObject;
+	import flash.ui.Keyboard;
 	import flash.utils.Dictionary;
 	
 	import starling.display.DisplayObject;
 	import starling.display.DisplayObjectContainer;
 	import starling.display.Quad;
 	import starling.display.Sprite;
+	import starling.events.KeyboardEvent;
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
 	import starling.events.TouchPhase;
@@ -18,14 +20,14 @@ package utils
 
 	public class AlphaSprite
 	{
-		private var _displayObjectsDic:Dictionary;
-		private var _data:XML;
 		private static var _instance:AlphaSprite;
+		private static var THRESHOLD:int = 5;
+		private var _displayObjectsDic:Dictionary;
+		private var _UIBoxesDic:Dictionary;
+		private var _data:XML;
 		private var _sharedObject:SharedObject;
-		private var _selectionQuad:Sprite;
 		private var _doContainer:DisplayObjectContainer;
 		private var _displayObjectsArray:Array;
-		private static var THRESHOLD:int = 5;
 		private var _verticalGuide:Quad;
 		private var _horizontalGuide:Quad;
 		private var _thresholdCounterX:int;
@@ -36,6 +38,10 @@ package utils
 		private var _deltaY:int;
 		private var _snapObject:Object;
 		private var _shiftTouch:Point;
+		private var _selectedDo:DisplayObject;
+		private var _displacement:int;
+		
+		
 		
 		public function AlphaSprite()
 		{
@@ -43,7 +49,7 @@ package utils
 			_displayObjectsArray = new Array();
 			_data = new XML();
 			_sharedObject = SharedObject.getLocal("data");
-			
+			_UIBoxesDic = new Dictionary();
 		}
 		
 		private function recurseStage(doc:DisplayObjectContainer):void
@@ -57,7 +63,6 @@ package utils
 				if(child.name){
 				
 					child.addEventListener(TouchEvent.TOUCH, onTouch);
-						
 					_displayObjectsDic[child.name] = child;
 					_displayObjectsArray.push(child);
 					
@@ -72,11 +77,6 @@ package utils
 		}
 		
 		
-		
-		
-		
-		
-		
 		private function onTouch(e:TouchEvent):void {
 			
 			var endedTouch:Touch = e.getTouch(DisplayObject(e.currentTarget), TouchPhase.ENDED); 
@@ -85,18 +85,18 @@ package utils
 			var movedTouch:Touch = e.getTouch(DisplayObject(e.currentTarget), TouchPhase.MOVED);
 		
 			var displayObject:DisplayObject = DisplayObject(e.currentTarget);
+			e.stopPropagation();
 			
 			//highlight
-			if(hoverTouch && _selectionQuad.visible == false){
+			if(hoverTouch){
 				
-				_selectionQuad.x = displayObject.x;
-				_selectionQuad.y = displayObject.y;
-				_selectionQuad = Border.createBorder(displayObject.width, displayObject.height, Color.AQUA, 1, _selectionQuad);
-				_selectionQuad.visible = true;
+				_UIBoxesDic[displayObject.name].highlight(true);
 				
 			}
 			else if(!hoverTouch) {
-				_selectionQuad.visible = false;
+				
+				_UIBoxesDic[displayObject.name].highlight(false);
+				
 			}
 			
 			if(movedTouch){
@@ -105,11 +105,13 @@ package utils
 				_deltaY = movedTouch.getMovement(displayObject).y;
 				
 				if(!_snappedX){
-					displayObject.x = movedTouch.getLocation(displayObject.parent).x - _shiftTouch.x; 
+					displayObject.x = movedTouch.getLocation(displayObject.parent).x - _shiftTouch.x;
+					_UIBoxesDic[displayObject.name].x = movedTouch.getLocation(displayObject.parent).x - _shiftTouch.x;
 				}
 				
 				if(!_snappedY){
 					displayObject.y = movedTouch.getLocation(displayObject.parent).y - _shiftTouch.y;
+					_UIBoxesDic[displayObject.name].y = movedTouch.getLocation(displayObject.parent).y - _shiftTouch.y;
 				}
 				
 				snap(checkSnap(displayObject), _deltaX, _deltaY);
@@ -119,7 +121,12 @@ package utils
 			//select
 			if(beganTouch){
 				
+				_selectedDo = displayObject;
+				_selectedDo.addEventListener(KeyboardEvent.KEY_DOWN, onMoveObject);
 				_shiftTouch = beganTouch.getLocation(displayObject);
+				deselectAll();
+				_UIBoxesDic[_selectedDo.name].select(true);
+				
 				
 			}
 			
@@ -131,6 +138,40 @@ package utils
 				_sharedObject.close();
 				
 			}
+		}
+		
+		private function onMoveObject(e:KeyboardEvent):void {
+			
+			_displacement = e.shiftKey ? 5 : 1; 
+			//right
+			if(e.keyCode == Keyboard.RIGHT){
+				
+				_selectedDo.x += _displacement;
+				_UIBoxesDic[_selectedDo.name].x += _displacement;
+			}
+			
+			//left
+			if(e.keyCode == Keyboard.LEFT){
+				
+				_selectedDo.x -= _displacement;
+				_UIBoxesDic[_selectedDo.name].x -= _displacement;
+				
+			}
+			
+			//up
+			if(e.keyCode == Keyboard.UP){
+				
+				_selectedDo.y -= _displacement;
+				_UIBoxesDic[_selectedDo.name].y -= _displacement;
+			}
+			
+			//down
+			if(e.keyCode == Keyboard.DOWN){
+				
+				_selectedDo.y += _displacement;
+				_UIBoxesDic[_selectedDo.name].y += _displacement;
+			}
+			
 		}
 		
 		private function drawGuide(data:Object):void {
@@ -224,6 +265,9 @@ package utils
 				}
 			}
 		
+			_UIBoxesDic[_selectedDo.name].x = _selectedDo.x;
+			_UIBoxesDic[_selectedDo.name].y = _selectedDo.y;
+			
 			drawGuide(data);
 			
 		}
@@ -285,17 +329,37 @@ package utils
 				return _snapObject;
 			
 		}
+		
+		private function onContainerTouch(e:TouchEvent):void {
+			
+			var beganTouch:Touch = e.getTouch(DisplayObject(e.currentTarget), TouchPhase.BEGAN);
+			
+			if(beganTouch){
+				
+				deselectAll();
+				
+			}
+			
+		}
+		
+		private function deselectAll():void {
+			
+			
+			
+			for each(var box:UIBox in  _UIBoxesDic){
+					
+					box.select(false);
+					
+			}
+			
+		}
 			
 		
 		public function init(object:DisplayObjectContainer):void {
 			
 			_doContainer = object;
-			
-			_selectionQuad = Border.createBorder(10, 10, Color.AQUA);
-			_selectionQuad.x = -99;
-			_selectionQuad.y = -99;
-			_doContainer.addChild(_selectionQuad);
-			
+			_doContainer.addEventListener(TouchEvent.TOUCH, onContainerTouch);
+				
 			_horizontalGuide = new Quad(1, 1, Color.AQUA);
 			_horizontalGuide.visible = false;
 			_doContainer.addChild(_horizontalGuide);
@@ -314,8 +378,8 @@ package utils
 					
 				}
 				
-				
-				
+				_UIBoxesDic[doName] = new UIBox(_displayObjectsDic[doName]);
+				_doContainer.addChild(_UIBoxesDic[doName]);
 				
 			}
 			
