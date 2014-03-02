@@ -13,6 +13,7 @@ package game
 	import interfaces.IGame;
 	
 	import ships.Ship;
+	import ships.Special;
 	
 	import starling.display.DisplayObject;
 	import starling.display.DisplayObjectContainer;
@@ -41,6 +42,7 @@ package game
 		private static const TILE_SIZE:int = 28;
 		private static const MINIMUM_SHIPS_TILES:int = 10; 
 		private static const MAXIMUM_SHIPS_TILES:int = 15;
+		private static const ALPHA_SPRITE_MODE:String = "write";
 		
 		private var _myGrid:Sprite;
 		private var _enemyGrid:Sprite;
@@ -49,6 +51,8 @@ package game
 		
 		private var _carrier:Ship;
 		private var _patrol:Ship;
+		private var _submarine:Ship;
+		private var _cruiser:Ship;
 		private var _destroyer:Ship;
 		private var _battleship:Ship;
 		private var _shipToPlace:Ship;
@@ -57,17 +61,13 @@ package game
 		private var _prevShipTilesPositionX:int;
 		private var _prevShipTilesPositionY:int;
 		private var _canPlaceShip:Boolean;
-		private var _tilesCounter:TextField;
-		private var _tilesCounterContainer:Sprite;
 		private var _placedShips:Array;
 		private var _usedTiles:int;
 		private var _doneButton:ExtendedButton;
 		private var _shipsToPlace:Array;
 		private var _totalAttackPower:int;
-		private var _currentAttackPower:TextField;
 		private var _myAttacks:Array;
 		private var _tile:Sprite;
-		private var _attackButton:ExtendedButton;
 		private var _attackedTiles:Array;
 		private var _player:Player;
 		private var _assetManager:AssetManager;
@@ -95,24 +95,30 @@ package game
 			
 			_attackedTiles = new Array();
 			
-			var testObject:Quad = new Quad(TILE_SIZE * 2, TILE_SIZE * 2, Color.GRAY); 
-			testObject.name = "to1";
-			addChild(testObject);
+			var testObject1:Sprite = new Sprite();
 			
-			var testObject2:Quad = new Quad(TILE_SIZE * 5, TILE_SIZE * 3, Color.RED);
+			var quad1:Quad = new Quad(TILE_SIZE * 2, TILE_SIZE * 2, Color.GRAY);
+			quad1.name = "quad1";
+			testObject1.addChild(quad1); 
+			
+			var quad2:Quad = new Quad(30, 30, Color.BLACK);
+			quad2.name = "quad2";
+			testObject1.addChild(quad2);
+			
+			addChild(testObject1);
+			
+			var testObject2:Sprite = new Sprite();
+			testObject2.addChild( new Quad(TILE_SIZE * 5, TILE_SIZE * 3, Color.RED));
 			testObject2.name = "to2";
 			addChild(testObject2);
 			
-			AlphaSprite.getInstance().init(this);
-						
+			AlphaSprite.getInstance().init(this, ALPHA_SPRITE_MODE);
 			
 			return;
 			
 			
-			/*buildGrids();
+			buildGrids();
 			initShips();
-			initShipTilesCounter();
-			initAttackPower();
 			
 			//visual aid used to select where to attack
 			_tile = Border.createBorder(TILE_SIZE, TILE_SIZE, Color.AQUA);
@@ -137,28 +143,13 @@ package game
 			_doneButton.addEventListener("buttonTriggeredEvent", onMyTurnEnd);
 			addChild(_doneButton);
 			
-			//attack button
-			var upStateA:Quad = new Quad(20, 20, Color.RED);
-			upStateA.name = "up0000";
-			var downStateA:Quad = new Quad(20, 20, Color.RED);
-			downStateA.name = "down0000";
-			var hoverStateA:Quad = new Quad(20, 20, Color.RED);
-			hoverStateA.name = "hover0000";
-			
-			var buttonsStatesA:Array = new Array;
-			buttonsStatesA.push(upStateA, downStateA, hoverStateA);
-			_attackButton = new ExtendedButton(buttonsStatesA);
-			_attackButton.pivotX = _attackButton.width / 2;
-			
-			_attackButton.x = stage.stageWidth / 2;
-			_attackButton.y = 30;
-			
-			addChild(_attackButton);
 			_placedShips = new Array();
 			
 			createTurns();
 			
-			_player.turn.start();*/
+			_player.turn.start();
+			
+			AlphaSprite.getInstance().init(this, ALPHA_SPRITE_MODE);
 			
 		}
 		
@@ -170,7 +161,7 @@ package game
 				"PLACING_SHIPS",
 				//start
 				{
-				 "var_property": [_attackButton, "enabled", false] 
+				 "var_property": [_enemyGrid, "touchable", false] 
 				},
 				//end
 				{
@@ -191,12 +182,12 @@ package game
 				"ATTACKING",
 				//start
 				{
-				 "var_property": [_attackButton, "enabled", true],
+				 "var_property": [_enemyGrid, "touchable", true],
 				 "var_method": [_enemyGrid, "addEventListener", TouchEvent.TOUCH, onEnemyGridTouched]
 				},
 				//end
 				{
-				 "var_property": [_attackButton, "enabled", false], 
+				 "var_property": [_enemyGrid, "touchable", false], 
 				 "var_method": [_enemyGrid, "removeEventListener", TouchEvent.TOUCH, onEnemyGridTouched]
 				},
 				//send
@@ -231,15 +222,12 @@ package game
 			
 			if(touch.phase == TouchPhase.BEGAN){
 				
-				if(int(_currentAttackPower.text) == 0) return;
-				
 				_myAttacks.push(xP, yP);	
 				var attackedTile:Image = new Image(_assetManager.getTexture("attacked_tile"));
 				attackedTile.x = _tile.x;
 				attackedTile.y = _tile.y;
 				_enemyGrid.addChild(attackedTile);
 				_attackedTiles.push(attackedTile);
-				updateAttackPower(-1);
 				
 			}
 		}
@@ -250,54 +238,9 @@ package game
 			
 		}
 		
-		private function initShipTilesCounter():void {
-			
-			_tilesCounterContainer = new Sprite();
-			_tilesCounterContainer.x = 255;
-			_tilesCounterContainer.y = 345;
-			addChild(_tilesCounterContainer);
-			
-			var image:Image = new Image(_assetManager.getTexture("ship_tiles_counter"));
-			image.pivotY = image.height / 2;
-			image.x -= 10;
-			_tilesCounterContainer.addChild(image);
-			
-			_tilesCounter = new TextField(50, 30, "0/" + String(MAXIMUM_SHIPS_TILES));
-			_tilesCounter.pivotY = _tilesCounter.height / 2;
-			_tilesCounterContainer.addChild(_tilesCounter);
-			
-			
-		}
-		
-		private function initAttackPower():void {
-			
-			var attackPowerContainer:Sprite = new Sprite();
-			attackPowerContainer.x = 55;
-			attackPowerContainer.y = 345;
-			addChild(attackPowerContainer);
-			
-			var image:Image = new Image(_assetManager.getTexture("ship_tiles_counter"));
-			image.pivotY = image.height / 2;
-			attackPowerContainer.addChild(image);
-			
-			_currentAttackPower = new TextField(50, 30, String(_totalAttackPower));
-			_currentAttackPower.pivotY = _currentAttackPower.height / 2;
-			attackPowerContainer.addChild(_currentAttackPower);
-			
-			
-		}
-		
-		private function updateAttackPower(attackUsed:int):void {
-			
-			_currentAttackPower.text = String(int(_currentAttackPower.text) + attackUsed);
-			
-		}
-		
-		
 		private function updateTilesCounter(tiles:int):void {
 			
 			_usedTiles += tiles;
-			_tilesCounter.text = String(_usedTiles) + "/" + String(MAXIMUM_SHIPS_TILES);
 			
 			if(_usedTiles >= MINIMUM_SHIPS_TILES){
 				_doneButton.enabled = true;
@@ -318,44 +261,70 @@ package game
 			
 			_assetManager.getTexture("patrol_side");
 			
-			var carrierSideImage:Image = new Image(_assetManager.getTexture("carrier_side"));
+			var carrierSideImage:Image = new Image(_assetManager.getTexture("carrier_side_black"));
 			var carrierTopImage:Image = new Image(_assetManager.getTexture("carrier_top"));
+			var carrierSpecial:Special = new Special();
 			
-			_carrier = new Ship("carrier", 5, 2, carrierSideImage, carrierTopImage);
+			_carrier = new Ship("carrier", 4, 5, 2, carrierSpecial, carrierSideImage, carrierTopImage, "detailed");
 			_carrier.x = 50 + _carrier.pivotX;
 			_carrier.y = 400;
+			_carrier.name = "carrier";
 			addChild(_carrier);
 			_carrier.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			
-			var battleshipSideImage:Image = new Image(_assetManager.getTexture("battleship_side"));
+			/*var battleshipSideImage:Image = new Image(_assetManager.getTexture("battleship_side_black"));
 			var battleshipTopImage:Image = new Image(_assetManager.getTexture("battleship_top"));
+			var battleshipSpecial:Special = new Special();
 			
-			_battleship = new Ship("battleship", 4, 2, battleshipSideImage, battleshipTopImage);
+			_battleship = new Ship("battleship", 4, 4, 3, battleshipSpecial, battleshipSideImage, battleshipTopImage, "detailed");
 			_battleship.x = 50 + _battleship.pivotX;
 			_battleship.y = _carrier.y + 50;
 			addChild(_battleship);
 			_battleship.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			
-			var destroyerSideImage:Image = new Image(_assetManager.getTexture("destroyer_side"));
+			var destroyerSideImage:Image = new Image(_assetManager.getTexture("destroyer_side_black"));
 			var destroyerTopImage:Image = new Image(_assetManager.getTexture("destroyer_top"));
+			var destroyerSpecial:Special = new Special();
 			
-			_destroyer = new Ship("destroyer", 3, 1, destroyerSideImage, destroyerTopImage);
+			_destroyer = new Ship("destroyer", 3, 3, 1, destroyerSpecial, destroyerSideImage, destroyerTopImage, "detailed");
 			_destroyer.x = 50 + _destroyer.pivotX;
 			_destroyer.y = _battleship.y + 50;
 			addChild(_destroyer);
 			_destroyer.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			
-			var patrolSideImage:Image = new Image(_assetManager.getTexture("patrol_side"));
+			var patrolSideImage:Image = new Image(_assetManager.getTexture("patrol_side_black"));
 			var patrolTopImage:Image = new Image(_assetManager.getTexture("patrol_top"));
+			var patrolSpecial:Special = new Special();
 			
-			_patrol = new Ship("patrol", 2, 1, patrolSideImage, patrolTopImage);
+			_patrol = new Ship("patrol", 2, 2, 0, patrolSpecial, patrolSideImage, patrolTopImage, "detailed");
 			_patrol.x = 50 + _patrol.pivotX;
 			_patrol.y = _destroyer.y + 50;
 			addChild(_patrol);
 			_patrol.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			
+			var submarineSideImage:Image = new Image(_assetManager.getTexture("submarine_side_black"));
+			var submarineTopImage:Image = new Image(_assetManager.getTexture("submarine_top"));
+			var submarineSpecial:Special = new Special();
+			
+			_submarine = new Ship("submarine", 2, 3, 1, submarineSpecial, submarineSideImage, submarineTopImage, "detailed");
+			_submarine.x = 50 + _submarine.pivotX;
+			_submarine.y = _destroyer.y + 50;
+			addChild(_submarine);
+			_submarine.addEventListener(TouchEvent.TOUCH, onShipTouch);
+			
+			var cruiserSideImage:Image = new Image(_assetManager.getTexture("cruiser_side_black"));
+			var cruiserTopImage:Image = new Image(_assetManager.getTexture("cruiser_top"));
+			var cruiserSpecial:Special = new Special();
+			
+			_cruiser = new Ship("cruiser", 2, 3, 1, cruiserSpecial, cruiserSideImage, cruiserTopImage, "detailed");
+			_cruiser.x = 50 + _cruiser.pivotX;
+			_cruiser.y = _destroyer.y + 50;
+			addChild(_cruiser);
+			_cruiser.addEventListener(TouchEvent.TOUCH, onShipTouch);*/
+			
 			_shipsToPlace = new Array();
-			_shipsToPlace.push(_carrier, _destroyer, _patrol, _battleship);
+			//_shipsToPlace.push(_carrier, _destroyer, _patrol, _battleship);
+			_shipsToPlace.push(_carrier);
 		}
 		
 		private function setTouchableShips(value:Boolean):void {
@@ -606,7 +575,6 @@ package game
 				
 				_placedShips.push(_shipToPlace);
 				_totalAttackPower += _shipToPlace.attackPower;
-				updateAttackPower(_shipToPlace.attackPower);
 				
 				if(!_touchedShip.placed)
 					updateTilesCounter(_shipToPlace.size);

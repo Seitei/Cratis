@@ -1,5 +1,7 @@
 package utils
 {
+	import flash.geom.Point;
+	
 	import starling.display.DisplayObject;
 	import starling.display.Quad;
 	import starling.display.Sprite;
@@ -35,18 +37,22 @@ package utils
 			_highlightBox.visible = false;
 			_selectionBox.visible = false;
 			
-			Border.createBorder(displayObject.width, displayObject.height, Color.AQUA, 1, _highlightBox);
+		}
+		
+		public function updateUI():void {
 			
-			Border.createBorder(displayObject.width, displayObject.height, Color.AQUA, 1, _selectionBox);
+			Border.createBorder(_selectedDo.width, _selectedDo.height, Color.AQUA, 1, _highlightBox);
+			Border.createBorder(_selectedDo.width, _selectedDo.height, Color.AQUA, 1, _selectionBox);
 			
-			this.x = displayObject.x;
-			this.y = displayObject.y;
+			this.x = _selectedDo.localToGlobal(new Point()).x;
+			this.y = _selectedDo.localToGlobal(new Point()).y;
 			
 			createAnchors();
-			
 		}
 		
 		public function highlight(value:Boolean):void {
+			
+			updateUI();
 			
 			_highlightBox.visible = value;
 			

@@ -21,7 +21,7 @@ package utils
 	public class AlphaSprite
 	{
 		private static var _instance:AlphaSprite;
-		private static var THRESHOLD:int = 5;
+		private static var THRESHOLD:int = 3;
 		private var _displayObjectsDic:Dictionary;
 		private var _UIBoxesDic:Dictionary;
 		private var _data:XML;
@@ -40,7 +40,7 @@ package utils
 		private var _shiftTouch:Point;
 		private var _selectedDo:DisplayObject;
 		private var _displacement:int;
-		
+		private var _mode:String;
 		
 		
 		public function AlphaSprite()
@@ -62,20 +62,36 @@ package utils
 				
 				if(child.name){
 				
-					child.addEventListener(TouchEvent.TOUCH, onTouch);
 					_displayObjectsDic[child.name] = child;
 					_displayObjectsArray.push(child);
 					
+					//if the object exists in the shared objects, assign properties
+					if(_sharedObject.data[child.name]) {
+						
+						for ( var property:String in _sharedObject.data[child.name]) {
+							
+							_displayObjectsDic[child.name][property] = _sharedObject.data[child.name][property];
+							
+						}
+					}
+				
+					if(_mode == "write"){
+						
+						//removing the listeners so they don't interfere and add AlphaSprite ones.
+						DisplayObject(child).removeEventListeners();
+						child.addEventListener(TouchEvent.TOUCH, onTouch);
+						
+					}
 				}
 				
 				if(child is DisplayObjectContainer && child.numChildren > 0){
-					
+						
 					recurseStage(child);
-					
+						
 				}
+				
 			}
 		}
-		
 		
 		private function onTouch(e:TouchEvent):void {
 			
@@ -106,12 +122,12 @@ package utils
 				
 				if(!_snappedX){
 					displayObject.x = movedTouch.getLocation(displayObject.parent).x - _shiftTouch.x;
-					_UIBoxesDic[displayObject.name].x = movedTouch.getLocation(displayObject.parent).x - _shiftTouch.x;
+					_UIBoxesDic[displayObject.name].x = movedTouch.globalX - _shiftTouch.x;
 				}
 				
 				if(!_snappedY){
 					displayObject.y = movedTouch.getLocation(displayObject.parent).y - _shiftTouch.y;
-					_UIBoxesDic[displayObject.name].y = movedTouch.getLocation(displayObject.parent).y - _shiftTouch.y;
+					_UIBoxesDic[displayObject.name].y = movedTouch.globalY - _shiftTouch.y;
 				}
 				
 				snap(checkSnap(displayObject), _deltaX, _deltaY);
@@ -265,8 +281,8 @@ package utils
 				}
 			}
 		
-			_UIBoxesDic[_selectedDo.name].x = _selectedDo.x;
-			_UIBoxesDic[_selectedDo.name].y = _selectedDo.y;
+			_UIBoxesDic[_selectedDo.name].updateUI();
+			
 			
 			drawGuide(data);
 			
@@ -275,7 +291,8 @@ package utils
 		
 		private function checkSnap(selectedDO:DisplayObject):Object {
 			
-			var sDORect:Rectangle = selectedDO.getBounds(selectedDO.parent);
+			//var sDORect:Rectangle = selectedDO.getBounds(selectedDO.parent);
+			var sDORect:Rectangle = selectedDO.getBounds(_doContainer);
 			var sDOSides:Array = [[sDORect.left, sDORect.right, sDORect.left + selectedDO.width / 2], 
 								  [sDORect.top, sDORect.bottom, sDORect.top + selectedDO.height / 2]];
 				
@@ -285,10 +302,11 @@ package utils
 				
 				var dO:DisplayObject = _displayObjectsArray[i];
 				
-				if(dO.name == selectedDO.name)
+				if(dO.name == selectedDO.name || selectedDO.parent == dO)
 					continue;
 				
-				var dORect:Rectangle = dO.getBounds(dO.parent);
+				//var dORect:Rectangle = dO.getBounds(dO.parent);
+				var dORect:Rectangle = dO.getBounds(_doContainer);
 				var dOSides:Array = [[dORect.left, dORect.right, dORect.left + dO.width / 2],
 									 [dORect.top, dORect.bottom, dORect.top + dO.height / 2]];
 								
@@ -344,44 +362,47 @@ package utils
 		
 		private function deselectAll():void {
 			
-			
-			
 			for each(var box:UIBox in  _UIBoxesDic){
 					
-					box.select(false);
+				box.select(false);
+				_verticalGuide.visible = false;
+				_horizontalGuide.visible = false;
+				
+				_snappedX = false;
+				_snappedY = false;
 					
 			}
 			
 		}
 			
 		
-		public function init(object:DisplayObjectContainer):void {
+		public function init(object:DisplayObjectContainer, mode:String):void {
 			
+			_mode = mode;
 			_doContainer = object;
-			_doContainer.addEventListener(TouchEvent.TOUCH, onContainerTouch);
-				
-			_horizontalGuide = new Quad(1, 1, Color.AQUA);
-			_horizontalGuide.visible = false;
-			_doContainer.addChild(_horizontalGuide);
-			
-			_verticalGuide = new Quad(1, 1, Color.AQUA);
-			_verticalGuide.visible = false;
-			_doContainer.addChild(_verticalGuide);
 			
 			recurseStage(object);
 			
-			for ( var doName:String in _sharedObject.data) {
+			if(_mode == "write"){
+				_doContainer.addEventListener(TouchEvent.TOUCH, onContainerTouch);
 				
-				for ( var property:String in _sharedObject.data[doName]) {
+				_horizontalGuide = new Quad(1, 1, Color.AQUA);
+				_horizontalGuide.visible = false;
+				_doContainer.addChild(_horizontalGuide);
+				
+				_verticalGuide = new Quad(1, 1, Color.AQUA);
+				_verticalGuide.visible = false;
+				_doContainer.addChild(_verticalGuide);	
+				
+				for(var i:int; i < _displayObjectsArray.length; i ++){
 					
-					_displayObjectsDic[doName][property] = _sharedObject.data[doName][property];
+					_UIBoxesDic[_displayObjectsArray[i].name] = new UIBox(_displayObjectsArray[i]);
+					_doContainer.addChild(_UIBoxesDic[_displayObjectsArray[i].name]);
 					
 				}
-				
-				_UIBoxesDic[doName] = new UIBox(_displayObjectsDic[doName]);
-				_doContainer.addChild(_UIBoxesDic[doName]);
-				
 			}
+			
+			
 			
 		}
 		
