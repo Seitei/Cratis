@@ -95,7 +95,7 @@ package game
 			
 			_attackedTiles = new Array();
 			
-			var testObject1:Sprite = new Sprite();
+			/*var testObject1:Sprite = new Sprite();
 			
 			var quad1:Quad = new Quad(TILE_SIZE * 2, TILE_SIZE * 2, Color.GRAY);
 			quad1.name = "quad1";
@@ -114,7 +114,7 @@ package game
 			
 			AlphaSprite.getInstance().init(this, ALPHA_SPRITE_MODE);
 			
-			return;
+			return;*/
 			
 			
 			buildGrids();
@@ -268,7 +268,7 @@ package game
 			_carrier = new Ship("carrier", 4, 5, 2, carrierSpecial, carrierSideImage, carrierTopImage, "detailed");
 			_carrier.x = 50 + _carrier.pivotX;
 			_carrier.y = 400;
-			_carrier.name = "carrier";
+			_carrier.name = "carrier" + "_alpha";
 			addChild(_carrier);
 			_carrier.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			

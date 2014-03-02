@@ -4,16 +4,17 @@ package utils
 	import starling.display.DisplayObjectContainer;
 	import starling.display.Quad;
 	import starling.display.Sprite;
+	import starling.utils.Color;
 	
 	public class Border
 	{
 		
-		public static function createBorder(width:Number, height:Number, color:uint, thickness:Number = 1, container:Sprite = null):Sprite {
+		public static function createBorder(width:Number = Number.NaN, height:Number = Number.NaN, color:uint = Color.BLACK, thickness:Number = 1, container:Sprite = null):Sprite {
 
 			if(!container) 
 				var container:Sprite = new Sprite(); 
-			else
-				container.removeChildren(0, -1, true);	
+			/*else
+				container.removeChildren(0, -1, true);*/	
 			
 			for (var i:int=0; i<4; ++i){
 				
@@ -21,6 +22,12 @@ package utils
 				quad.touchable = false;
 				container.addChild(quad);
 			}
+			
+			if(isNaN(width))
+				width = container.width;
+			
+			if(isNaN(height))
+				height = container.height;
 			
 			var topLine:Quad    = container.getChildAt(container.numChildren - 4) as Quad;
 			var rightLine:Quad  = container.getChildAt(container.numChildren - 3) as Quad;

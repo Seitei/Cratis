@@ -79,7 +79,9 @@ package utils
 						
 						//removing the listeners so they don't interfere and add AlphaSprite ones.
 						DisplayObject(child).removeEventListeners();
-						child.addEventListener(TouchEvent.TOUCH, onTouch);
+						
+						if(child.name.indexOf("_alpha") == -1)
+							child.addEventListener(TouchEvent.TOUCH, onTouch);
 						
 					}
 				}
@@ -137,24 +139,40 @@ package utils
 			//select
 			if(beganTouch){
 				
+				if(_selectedDo) {
+					_selectedDo.removeEventListener(KeyboardEvent.KEY_DOWN, onMoveObject);
+					_selectedDo.removeEventListener(KeyboardEvent.KEY_UP, onFinishedMovingObject);
+				}
 				_selectedDo = displayObject;
 				_selectedDo.addEventListener(KeyboardEvent.KEY_DOWN, onMoveObject);
+				_selectedDo.addEventListener(KeyboardEvent.KEY_UP, onFinishedMovingObject);
 				_shiftTouch = beganTouch.getLocation(displayObject);
 				deselectAll();
 				_UIBoxesDic[_selectedDo.name].select(true);
 				
+				trace(_selectedDo.x, _selectedDo.y);
 				
 			}
 			
 			//save new position
 			if(endedTouch) {
-				
-				_sharedObject.data[displayObject.name] = {"x": displayObject.x, "y": displayObject.y};
-				_sharedObject.flush();
-				_sharedObject.close();
-				
+				saveData();
 			}
 		}
+		
+		private function saveData():void {
+			
+			_sharedObject.data[_selectedDo.name] = {"x": _selectedDo.x, "y": _selectedDo.y};
+			_sharedObject.flush();
+			_sharedObject.close();	
+		}
+		
+		private function onFinishedMovingObject(e:KeyboardEvent):void {
+		
+			saveData();
+			
+		}
+		
 		
 		private function onMoveObject(e:KeyboardEvent):void {
 			
@@ -200,13 +218,15 @@ package utils
 				
 				if(data.selectedDO.y - data.axisX.dObject.y > 0){
 					
-					_verticalGuide.y = data.axisX.dObject.y;
+					_verticalGuide.y = data.axisX.dObject.localToGlobal(new Point()).y;
 					_verticalGuide.height = data.selectedDO.y - data.axisX.dObject.y + data.selectedDO.height;    	
 						
 				}
 				else {
-					_verticalGuide.y = data.selectedDO.y;
-					_verticalGuide.height = -(data.selectedDO.y - data.axisX.dObject.y) + data.axisX.dObject.height;  
+					
+					_verticalGuide.y = data.selectedDO.localToGlobal(new Point()).y;
+					_verticalGuide.height = -(data.selectedDO.y - data.axisX.dObject.y) + data.axisX.dObject.height;
+					
 				}
 			}
 			else {
@@ -222,13 +242,15 @@ package utils
 				
 				if(data.selectedDO.x - data.axisY.dObject.x > 0){
 					
-					_horizontalGuide.x = data.axisY.dObject.x;
+					_horizontalGuide.x = data.axisY.dObject.localToGlobal(new Point()).x;
 					_horizontalGuide.width = data.selectedDO.x - data.axisY.dObject.x + data.selectedDO.width;    	
 					
 				}
 				else {
-					_horizontalGuide.x = data.selectedDO.x;
-					_horizontalGuide.width = -(data.selectedDO.x - data.axisY.dObject.x) + data.axisY.dObject.width;  
+					
+					_horizontalGuide.x = data.selectedDO.localToGlobal(new Point()).x;
+					_horizontalGuide.width = -(data.selectedDO.x - data.axisY.dObject.x) + data.axisY.dObject.width;
+					
 				}
 			}
 			else {
@@ -291,7 +313,6 @@ package utils
 		
 		private function checkSnap(selectedDO:DisplayObject):Object {
 			
-			//var sDORect:Rectangle = selectedDO.getBounds(selectedDO.parent);
 			var sDORect:Rectangle = selectedDO.getBounds(_doContainer);
 			var sDOSides:Array = [[sDORect.left, sDORect.right, sDORect.left + selectedDO.width / 2], 
 								  [sDORect.top, sDORect.bottom, sDORect.top + selectedDO.height / 2]];
@@ -305,7 +326,6 @@ package utils
 				if(dO.name == selectedDO.name || selectedDO.parent == dO)
 					continue;
 				
-				//var dORect:Rectangle = dO.getBounds(dO.parent);
 				var dORect:Rectangle = dO.getBounds(_doContainer);
 				var dOSides:Array = [[dORect.left, dORect.right, dORect.left + dO.width / 2],
 									 [dORect.top, dORect.bottom, dORect.top + dO.height / 2]];

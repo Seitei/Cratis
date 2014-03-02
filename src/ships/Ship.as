@@ -7,6 +7,7 @@ package ships
 	import starling.text.TextField;
 	import starling.textures.Texture;
 	import starling.utils.Color;
+	import starling.utils.HAlign;
 	
 	import utils.Border;
 	
@@ -28,6 +29,8 @@ package ships
 		private var _special:Special;
 		private var _shipNameTxt:TextField;
 		private var _state:String;
+		private var _sizeBoxesContainer:Sprite;
+		private var _costSquaresContainer:Sprite;
 		
 		public function Ship(shipName:String, cost:int, size:int, attackPower:int, special:Special, sideView:Image, topView:Image, state:String)
 		{
@@ -66,14 +69,19 @@ package ships
 		
 		private function createSizeBoxes(size:int):void {
 		
+			_sizeBoxesContainer = new Sprite();
+			_sizeBoxesContainer.name = this.shipName + "_sizeBoxesContainer";
+			addChild(_sizeBoxesContainer);
+			
 			//horizontals
 			var top:Quad = new Quad(_tileSize * size, 1, Color.WHITE);
 			var bot:Quad = new Quad(_tileSize * size, 1, Color.WHITE);
 			bot.alpha = top.alpha = 0.7;
 			
 			bot.y = _tileSize;
-			addChildAt(top, 0);
-			addChildAt(bot, 0);
+			
+			_sizeBoxesContainer.addChild(top);
+			_sizeBoxesContainer.addChild(bot);
 			
 			//verticals
 			for(var i:int = 0; i <= size; i++){
@@ -81,9 +89,29 @@ package ships
 				var vertical:Quad = new Quad(1, _tileSize, Color.WHITE);
 				vertical.alpha = 0.7;
 				vertical.x = i * _tileSize;
-				addChildAt(vertical, 0);
+				_sizeBoxesContainer.addChild(vertical);
 				
 			}
+			
+		}
+		
+		private function createCostSquares():void {
+			
+			_costSquaresContainer = new Sprite();
+			_costSquaresContainer.name = this.shipName + "_costSquaresContainer";
+			addChild(_costSquaresContainer);
+			
+			for(var i:int = 0; i <= _cost; i++){
+				
+				var costQuadContainer:Sprite = new Sprite();
+				var costQuad:Quad = new Quad(8, 8, 0x00AEEF);
+				costQuadContainer.x = i * 10;
+				costQuadContainer.addChild(costQuad);
+				Border.createBorder(Number.NaN, Number.NaN, Color.BLACK, 1, costQuadContainer);
+				_costSquaresContainer.addChild(costQuadContainer);
+				
+			}
+			
 			
 		}
 		
@@ -94,10 +122,14 @@ package ships
 				case "detailed":
 					
 					addChild(_sideView);
+					_sideView.name = this.shipName + "_sideView";
 					createSizeBoxes(size);
+					createCostSquares();
+					//createAttackSquares();
 					
-					_shipNameTxt = new TextField(150, 50, this.shipName, "Consolas", 12, Color.BLACK);
+					_shipNameTxt = new TextField(75, 35, this.shipName.toUpperCase(), "Consolas", 12, Color.BLACK);
 					_shipNameTxt.name = this.shipName + "Txt";
+					_shipNameTxt.hAlign = HAlign.LEFT;
 					addChild(_shipNameTxt);
 					
 					
