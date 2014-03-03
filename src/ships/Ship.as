@@ -31,6 +31,7 @@ package ships
 		private var _state:String;
 		private var _sizeBoxesContainer:Sprite;
 		private var _costSquaresContainer:Sprite;
+		private var _attackSquaresContainer:Sprite;
 		
 		public function Ship(shipName:String, cost:int, size:int, attackPower:int, special:Special, sideView:Image, topView:Image, state:String)
 		{
@@ -111,8 +112,24 @@ package ships
 				_costSquaresContainer.addChild(costQuadContainer);
 				
 			}
+		}
+		
+		private function createAttackSquares():void {
 			
+			_attackSquaresContainer = new Sprite();
+			_attackSquaresContainer.name = this.shipName + "_attackSquaresContainer";
+			addChild(_attackSquaresContainer);
 			
+			for(var i:int = 0; i <= _attackPower; i++){
+				
+				var attackQuadContainer:Sprite = new Sprite();
+				var attackQuad:Quad = new Quad(8, 8, 0xEA5639);
+				attackQuadContainer.x = i * 10;
+				attackQuadContainer.addChild(attackQuad);
+				Border.createBorder(Number.NaN, Number.NaN, Color.BLACK, 1, attackQuadContainer);
+				_attackSquaresContainer.addChild(attackQuadContainer);
+				
+			}
 		}
 		
 		private function createState(state:String):void {
@@ -121,11 +138,11 @@ package ships
 				
 				case "detailed":
 					
+					createCostSquares();
+					createSizeBoxes(size);
+					createAttackSquares();
 					addChild(_sideView);
 					_sideView.name = this.shipName + "_sideView";
-					createSizeBoxes(size);
-					createCostSquares();
-					//createAttackSquares();
 					
 					_shipNameTxt = new TextField(75, 35, this.shipName.toUpperCase(), "Consolas", 12, Color.BLACK);
 					_shipNameTxt.name = this.shipName + "Txt";

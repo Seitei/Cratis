@@ -1,6 +1,7 @@
 package utils
 {
 	import flash.geom.Point;
+	import flash.geom.Rectangle;
 	
 	import starling.display.DisplayObject;
 	import starling.display.Quad;
@@ -23,10 +24,15 @@ package utils
 		private var _botRightAnchor:Quad;
 		private var _rotationAnchor:Quad;
 		private var _selectedDo:DisplayObject;
+		private var _type:String = "beta";
 		
 		public function UIBox(displayObject:DisplayObject)
 		{
 			
+			//alpha UI is different from normal (beta) UI's;
+			if(displayObject.name.indexOf("_alpha") != -1)
+				_type = "alpha";	
+				
 			_highlightBox = new Sprite();
 			_selectionBox = new Sprite();
 			_selectedDo = displayObject;
@@ -39,20 +45,28 @@ package utils
 			
 		}
 		
+		public function get selectedDo():DisplayObject
+		{
+			return _selectedDo;
+		}
+
 		public function updateUI():void {
 			
-			Border.createBorder(_selectedDo.width, _selectedDo.height, Color.AQUA, 1, _highlightBox);
-			Border.createBorder(_selectedDo.width, _selectedDo.height, Color.AQUA, 1, _selectionBox);
+			Border.createBorder(_selectedDo.width, _selectedDo.height, _type == "alpha" ? Color.RED : Color.AQUA, 1, _highlightBox);
+			Border.createBorder(_selectedDo.width, _selectedDo.height, _type == "alpha" ? Color.RED : Color.AQUA, 1, _selectionBox);
 			
-			this.x = _selectedDo.localToGlobal(new Point()).x;
-			this.y = _selectedDo.localToGlobal(new Point()).y;
+			var sDORect:Rectangle = _selectedDo.getBounds(stage);
+			
+			this.x = sDORect.left;//_selectedDo.localToGlobal(new Point()).x;
+			this.y = sDORect.top;//_selectedDo.localToGlobal(new Point()).y;
 			
 			createAnchors();
 		}
 		
 		public function highlight(value:Boolean):void {
 			
-			updateUI();
+			if(value)
+				updateUI();
 			
 			_highlightBox.visible = value;
 			
@@ -69,15 +83,17 @@ package utils
 			
 			_anchorsArray = new Array();
 			
-			_anchorsArray[1] = _topLeftAnchor = new Quad(anchorSize, anchorSize, Color.AQUA);  _topLeftAnchor.name = "topLeft";
-			_anchorsArray[2] = _topMidAnchor = new Quad(anchorSize, anchorSize, Color.AQUA);   _topMidAnchor.name = "topMid";
-			_anchorsArray[3] = _topRightAnchor = new Quad(anchorSize, anchorSize, Color.AQUA); _topRightAnchor.name = "topRight";
-			_anchorsArray[4] = _midLeftAnchor = new Quad(anchorSize, anchorSize, Color.AQUA);  _midLeftAnchor.name = "midLeft";
-			_anchorsArray[6] = _midRightAnchor = new Quad(anchorSize, anchorSize, Color.AQUA); _midRightAnchor.name = "midRight";
-			_anchorsArray[7] = _botLeftAnchor = new Quad(anchorSize, anchorSize, Color.AQUA);  _botLeftAnchor.name = "botLeft";
-			_anchorsArray[8] = _botMidAnchor = new Quad(anchorSize, anchorSize, Color.AQUA);   _botMidAnchor.name = "botMid";
-			_anchorsArray[9] = _botRightAnchor = new Quad(anchorSize, anchorSize, Color.AQUA); _botRightAnchor.name = "botRight";
-			_rotationAnchor = new Quad(6, 6, Color.AQUA);
+			var color:uint = _type == "alpha" ? Color.RED : Color.AQUA;
+			
+			_anchorsArray[1] = _topLeftAnchor = new Quad(anchorSize, anchorSize,color);  _topLeftAnchor.name = "topLeft";
+			_anchorsArray[2] = _topMidAnchor = new Quad(anchorSize, anchorSize, color);   _topMidAnchor.name = "topMid";
+			_anchorsArray[3] = _topRightAnchor = new Quad(anchorSize, anchorSize, color); _topRightAnchor.name = "topRight";
+			_anchorsArray[4] = _midLeftAnchor = new Quad(anchorSize, anchorSize, color);  _midLeftAnchor.name = "midLeft";
+			_anchorsArray[6] = _midRightAnchor = new Quad(anchorSize, anchorSize, color); _midRightAnchor.name = "midRight";
+			_anchorsArray[7] = _botLeftAnchor = new Quad(anchorSize, anchorSize, color);  _botLeftAnchor.name = "botLeft";
+			_anchorsArray[8] = _botMidAnchor = new Quad(anchorSize, anchorSize, color);   _botMidAnchor.name = "botMid";
+			_anchorsArray[9] = _botRightAnchor = new Quad(anchorSize, anchorSize, color); _botRightAnchor.name = "botRight";
+			_rotationAnchor = new Quad(6, 6, color);
 			
 			var xCounter:Number = 0;
 			var yCounter:Number = 0;

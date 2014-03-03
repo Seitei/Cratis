@@ -8,10 +8,12 @@ package utils
 	import flash.ui.Keyboard;
 	import flash.utils.Dictionary;
 	
+	import starling.core.Starling;
 	import starling.display.DisplayObject;
 	import starling.display.DisplayObjectContainer;
 	import starling.display.Quad;
 	import starling.display.Sprite;
+	import starling.display.Stage;
 	import starling.events.KeyboardEvent;
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
@@ -41,7 +43,8 @@ package utils
 		private var _selectedDo:DisplayObject;
 		private var _displacement:int;
 		private var _mode:String;
-		
+		private var _movingWithKeyboard:Boolean;
+		private var _alphaMode:Boolean = false;
 		
 		public function AlphaSprite()
 		{
@@ -80,8 +83,7 @@ package utils
 						//removing the listeners so they don't interfere and add AlphaSprite ones.
 						DisplayObject(child).removeEventListeners();
 						
-						if(child.name.indexOf("_alpha") == -1)
-							child.addEventListener(TouchEvent.TOUCH, onTouch);
+						child.addEventListener(TouchEvent.TOUCH, onTouch);
 						
 					}
 				}
@@ -103,7 +105,13 @@ package utils
 			var movedTouch:Touch = e.getTouch(DisplayObject(e.currentTarget), TouchPhase.MOVED);
 		
 			var displayObject:DisplayObject = DisplayObject(e.currentTarget);
-			e.stopPropagation();
+			
+			if(!_alphaMode && displayObject.name.indexOf("_alpha") != -1)
+				return;
+			
+			if(!_alphaMode)	e.stopImmediatePropagation();
+			
+			if(_alphaMode && displayObject.name.indexOf("_alpha") == -1) return;
 			
 			//highlight
 			if(hoverTouch){
@@ -124,12 +132,14 @@ package utils
 				
 				if(!_snappedX){
 					displayObject.x = movedTouch.getLocation(displayObject.parent).x - _shiftTouch.x;
-					_UIBoxesDic[displayObject.name].x = movedTouch.globalX - _shiftTouch.x;
+					//_UIBoxesDic[displayObject.name].x = movedTouch.globalX - _shiftTouch.x;
+					_UIBoxesDic[displayObject.name].updateUI();
 				}
 				
 				if(!_snappedY){
 					displayObject.y = movedTouch.getLocation(displayObject.parent).y - _shiftTouch.y;
-					_UIBoxesDic[displayObject.name].y = movedTouch.globalY - _shiftTouch.y;
+					//_UIBoxesDic[displayObject.name].y = movedTouch.globalY - _shiftTouch.y;
+					_UIBoxesDic[displayObject.name].updateUI();
 				}
 				
 				snap(checkSnap(displayObject), _deltaX, _deltaY);
@@ -139,40 +149,54 @@ package utils
 			//select
 			if(beganTouch){
 				
-				if(_selectedDo) {
-					_selectedDo.removeEventListener(KeyboardEvent.KEY_DOWN, onMoveObject);
-					_selectedDo.removeEventListener(KeyboardEvent.KEY_UP, onFinishedMovingObject);
-				}
 				_selectedDo = displayObject;
-				_selectedDo.addEventListener(KeyboardEvent.KEY_DOWN, onMoveObject);
-				_selectedDo.addEventListener(KeyboardEvent.KEY_UP, onFinishedMovingObject);
 				_shiftTouch = beganTouch.getLocation(displayObject);
 				deselectAll();
+				e.stopPropagation();
 				_UIBoxesDic[_selectedDo.name].select(true);
-				
-				trace(_selectedDo.x, _selectedDo.y);
 				
 			}
 			
 			//save new position
 			if(endedTouch) {
+				
 				saveData();
+				
 			}
 		}
 		
 		private function saveData():void {
 			
+			_sharedObject.close();	
 			_sharedObject.data[_selectedDo.name] = {"x": _selectedDo.x, "y": _selectedDo.y};
 			_sharedObject.flush();
-			_sharedObject.close();	
 		}
 		
 		private function onFinishedMovingObject(e:KeyboardEvent):void {
 		
-			saveData();
+			if(_movingWithKeyboard){
+				
+				_selectedDo.x = Math.floor(_selectedDo.x);
+				_selectedDo.y = Math.floor(_selectedDo.y);
+				
+				saveData();
+				
+			}
+			
+			_movingWithKeyboard = false;
 			
 		}
 		
+		private function showAlpha(e:KeyboardEvent):void {
+		
+			if(e.keyCode == Keyboard.CONTROL){
+				
+				_alphaMode = !_alphaMode;
+				
+				deselectAll();
+				
+			}
+		}
 		
 		private function onMoveObject(e:KeyboardEvent):void {
 			
@@ -182,6 +206,7 @@ package utils
 				
 				_selectedDo.x += _displacement;
 				_UIBoxesDic[_selectedDo.name].x += _displacement;
+				_movingWithKeyboard = true;
 			}
 			
 			//left
@@ -189,7 +214,7 @@ package utils
 				
 				_selectedDo.x -= _displacement;
 				_UIBoxesDic[_selectedDo.name].x -= _displacement;
-				
+				_movingWithKeyboard = true;
 			}
 			
 			//up
@@ -197,6 +222,7 @@ package utils
 				
 				_selectedDo.y -= _displacement;
 				_UIBoxesDic[_selectedDo.name].y -= _displacement;
+				_movingWithKeyboard = true;
 			}
 			
 			//down
@@ -204,6 +230,7 @@ package utils
 				
 				_selectedDo.y += _displacement;
 				_UIBoxesDic[_selectedDo.name].y += _displacement;
+				_movingWithKeyboard = true;
 			}
 			
 		}
@@ -276,7 +303,7 @@ package utils
 				}
 				
 				if(Math.abs(_thresholdCounterX) >= THRESHOLD * 2){
-					trace(_thresholdCounterX / 2);
+					
 					data.selectedDO.x += _thresholdCounterX / 2;
 					
 					_thresholdCounterX = 0;					
@@ -324,6 +351,10 @@ package utils
 				var dO:DisplayObject = _displayObjectsArray[i];
 				
 				if(dO.name == selectedDO.name || selectedDO.parent == dO)
+					continue;
+				
+				//in alpha mode, the container shouldn't check with his own chilren
+				if(_alphaMode && DisplayObjectContainer(_selectedDo).contains(dO))
 					continue;
 				
 				var dORect:Rectangle = dO.getBounds(_doContainer);
@@ -380,9 +411,11 @@ package utils
 			
 		}
 		
-		private function deselectAll():void {
+		private function deselectAll(dO:DisplayObject = null):void {
 			
-			for each(var box:UIBox in  _UIBoxesDic){
+			for each(var box:UIBox in _UIBoxesDic){
+					
+				if(dO && dO.name == box.selectedDo.name) return;
 					
 				box.select(false);
 				_verticalGuide.visible = false;
@@ -401,9 +434,14 @@ package utils
 			_mode = mode;
 			_doContainer = object;
 			
+			_doContainer.addEventListener(KeyboardEvent.KEY_DOWN, onMoveObject);
+			_doContainer.addEventListener(KeyboardEvent.KEY_UP, onFinishedMovingObject);
+			_doContainer.addEventListener(KeyboardEvent.KEY_DOWN, showAlpha);
+			
 			recurseStage(object);
 			
 			if(_mode == "write"){
+				
 				_doContainer.addEventListener(TouchEvent.TOUCH, onContainerTouch);
 				
 				_horizontalGuide = new Quad(1, 1, Color.AQUA);
