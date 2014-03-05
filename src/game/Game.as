@@ -40,8 +40,8 @@ package game
 		
 		private static const TILES:int = 10;
 		private static const TILE_SIZE:int = 28;
-		private static const MINIMUM_SHIPS_TILES:int = 10; 
-		private static const MAXIMUM_SHIPS_TILES:int = 15;
+		private static const MINIMUM_COST_TO_SPEND:int = 10; 
+		private static const AVAILABLE_COST:int = 15;
 		private static const ALPHA_SPRITE_MODE:String = "read";
 		
 		private var _myGrid:Sprite;
@@ -58,13 +58,12 @@ package game
 		private var _shipToPlace:Ship;
 		private var _shipTiles:Sprite;
 		private var _touchedShip:Ship;
-		private var _prevShipTilesPositionX:int;
 		private var _prevShipTilesPositionY:int;
 		private var _canPlaceShip:Boolean;
-		private var _placedShips:Array;
-		private var _usedTiles:int;
+		private var _myFleet:Array;
+		private var _spent:int;
 		private var _doneButton:ExtendedButton;
-		private var _shipsToPlace:Array;
+		private var _fleetRoster:Array;
 		private var _totalAttackPower:int;
 		private var _myAttacks:Array;
 		private var _tile:Sprite;
@@ -144,7 +143,7 @@ package game
 			_doneButton.addEventListener("buttonTriggeredEvent", onMyTurnEnd);
 			addChild(_doneButton);
 			
-			_placedShips = new Array();
+			_myFleet = new Array();
 			
 			createTurns();
 			
@@ -239,18 +238,18 @@ package game
 			
 		}
 		
-		private function updateTilesCounter(tiles:int):void {
+		private function updateCost(cost:int):void {
 			
-			_usedTiles += tiles;
+			_spent += cost;
 			
-			if(_usedTiles >= MINIMUM_SHIPS_TILES){
+			if(_spent >= MINIMUM_COST_TO_SPEND){
 				_doneButton.enabled = true;
 			}
 			
 			//loop though ships to see which ones can't be placed because of their cost
-			for each(var ship:Ship in _shipsToPlace){
+			for each(var ship:Ship in _fleetRoster){
 				
-				if(ship.size > MAXIMUM_SHIPS_TILES - _usedTiles){
+				if(ship.cost > AVAILABLE_COST - _spent){
 					ship.disable();
 				}
 				
@@ -328,8 +327,8 @@ package game
 			addChild(_cruiser);
 			//_cruiser.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			
-			_shipsToPlace = new Array();
-			_shipsToPlace.push(_carrier, _destroyer, _patrol, _battleship);
+			_fleetRoster = new Array();
+			_fleetRoster.push(_carrier, _destroyer, _patrol, _battleship);
 			//_shipsToPlace.push(_carrier);
 		}
 		
@@ -340,7 +339,7 @@ package game
 			_destroyer.touchable = value;
 			_patrol.touchable = value;
 			
-			for each(var ship:Ship in _placedShips){
+			for each(var ship:Ship in _myFleet){
 				ship.touchable = value;
 			}
 		}
@@ -351,6 +350,7 @@ package game
 				_myMap[point.x][point.y] = 0;
 			}
 			
+			_myFleet.splice(_myFleet.indexOf(ship), 1);
 			_myGrid.removeChild(ship, true);
 		}
 		
@@ -370,14 +370,13 @@ package game
 				
 				case "positionShip":
 					
-					Mouse.hide();
+					//Mouse.hide();
 					setTouchableShips(false);
 					_shipToPlace.touchable = false;
 					_shipToPlace.alpha = 0.5;
 					addChild(_shipToPlace);
 					
 					this.addEventListener(KeyboardEvent.KEY_UP, onRotatingShip);
-					this.addEventListener(TouchEvent.TOUCH, movingShip);
 					_myGrid.addEventListener(TouchEvent.TOUCH, positioningShip);
 					
 					_shipTiles = Border.createBorder(_touchedShip.size * TILE_SIZE, TILE_SIZE, Color.AQUA);
@@ -405,14 +404,13 @@ package game
 			var yTile:int;
 			
 			_myGrid.addChild(shipToPlace);
-			_placedShips.push(shipToPlace);
 			
 			while(canPlace == false) {
 				
 				xTile = Math.random() * TILES;
 				yTile = Math.random() * TILES;
 				
-				//shipToPlace.rotation = Math.round(Math.random()) * Math.PI/2;
+				shipToPlace.rotation = Math.round(Math.random()) * Math.PI/2;
 				
 				shipToPlace.x = xTile * TILE_SIZE;
 				shipToPlace.y = yTile * TILE_SIZE;
@@ -424,16 +422,24 @@ package game
 				
 			}
 			
-			for(var i:int = 0; i < _shipToPlace.size; i ++){
-			
-				_myMap[xTile + i][yTile] = _shipToPlace.size;
-				_shipToPlace.position.push(new Point());
-				
-			}
+			writeShip(shipToPlace, xTile, yTile);
 			
 			showMap(_myMap);
 		}
+		
+		private function writeShip(ship:Ship, xTile:int, yTile:int):void {
 			
+			for(var i:int = 0; i < ship.size; i ++){
+				
+				var point:Point = new Point(ship.rotation ? xTile : xTile + i, ship.rotation ? yTile + i: yTile) 
+				_myMap[point.x][point.y] = _shipToPlace.size;
+				_shipToPlace.position.push(point);
+				
+			}
+			
+			_myFleet.push(ship);
+			
+		}
 		
 		private function onRotatingShip(e:KeyboardEvent):void {
 			
@@ -445,19 +451,7 @@ package game
 			}
 		}
 		
-		private function movingShip(e:TouchEvent):void {
-			
-			var hoverTouch:Touch = e.getTouch(this, TouchPhase.HOVER);
-			
-			if(hoverTouch){
-				
-				_shipToPlace.x = hoverTouch.globalX;
-				_shipToPlace.y = hoverTouch.globalY;
-				
-			}
-		}
-		
-		private function checkIfCanPlaceShip(shipToPlace:Ship, rectangle:Rectangle = null):Boolean {
+		private function checkIfCanPlaceShip(shipToPlace:Ship, rectangle:Rectangle = null, touchedShip:Ship = null):Boolean {
 			
 			var canPlace:Boolean = true;
 			var rec:Rectangle;
@@ -471,11 +465,20 @@ package game
 			if(_myGrid.getBounds(this).containsRect(rec)){
 				
 				//check overlaping between ships
-				for each(var ship:Ship in _placedShips) {
+				for each(var ship:Ship in _myFleet) {
 					
-					if(ship != shipToPlace && rec.intersects(ship.getBounds(this))){
-						canPlace = false;
-						break;
+					if(!touchedShip){
+						if(ship != shipToPlace && rec.intersects(ship.getBounds(this))){
+							canPlace = false;
+							break;
+						}
+					}
+					else {
+						
+						if(rec.intersects(ship.getBounds(this))){
+							canPlace = false;
+							break;
+						}
 					}
 				}	
 			}
@@ -503,6 +506,9 @@ package game
 			
 			if(touch.phase == TouchPhase.HOVER){
 				
+				_shipToPlace.x = touch.globalX;
+				_shipToPlace.y = touch.globalY;
+				
 				_shipTiles.x = xP * TILE_SIZE;
 				_shipTiles.x += TILE_SIZE / 2 * (_touchedShip.size % 2);
 				
@@ -512,47 +518,42 @@ package game
 					_shipTiles.x -= TILE_SIZE / 2;
 					_shipTiles.y -= TILE_SIZE / 2;
 				}
-				
-				_prevShipTilesPositionX = _shipTiles.x;
-				_prevShipTilesPositionY = _shipTiles.y;
-				
 			}
 			
 			if(touch.phase == TouchPhase.BEGAN){
 				
-				if(!checkIfCanPlaceShip(null, _shipTiles.getBounds(this))) return;
+				xP = _shipToPlace.rotation ? (_shipTiles.x - _shipTiles.pivotY) / TILE_SIZE : Math.floor(_shipTiles.x - _shipTiles.pivotX) / TILE_SIZE;
+				yP = _shipToPlace.rotation ? (_shipTiles.y - _shipTiles.pivotX) / TILE_SIZE : Math.floor(_shipTiles.y - _shipTiles.pivotY) / TILE_SIZE;
+				
+				if(!checkIfCanPlaceShip(_shipToPlace, _shipTiles.getBounds(this), _touchedShip)) return;
+				
+				_shipToPlace.alpha = 1;
 				
 				_shipToPlace.x = _shipTiles.x;
 				_shipToPlace.y = _shipTiles.y;
 				
+				_myGrid.removeChild(_shipTiles);
+				
 				_myGrid.addChild(_shipToPlace);
-				this.removeEventListener(TouchEvent.TOUCH, movingShip);
 				_myGrid.removeEventListener(TouchEvent.TOUCH, positioningShip);
 				Mouse.show();
 				
-				var point:Point;
-				
-				for(var i:int = 0; i < _shipToPlace.size; i ++){
-					
-					_myMap[xP + i][yP] = _shipToPlace.size;
-					point = new Point(xP + i, yP);
-					_shipToPlace.position.push(point);
-				}
-				
 				setTouchableShips(true);
-				
-				//debug
-				showMap(_myMap);
 				
 				_shipToPlace.touchable = true;
 				
 				_shipToPlace.placed = true;
 				
-				_placedShips.push(_shipToPlace);
 				_totalAttackPower += _shipToPlace.attackPower;
 				
-				if(!_touchedShip.placed)
-					updateTilesCounter(_shipToPlace.size);
+				eraseShip(_touchedShip);
+				
+				updateCost(_shipToPlace.size);
+				
+				writeShip(_shipToPlace, xP, yP);
+				
+				//debug
+				showMap(_myMap);
 				
 			}
 		}

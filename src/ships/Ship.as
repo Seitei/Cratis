@@ -99,7 +99,6 @@ package ships
 					case "placed":
 						
 						shipToPlace = this.clone("placed");
-						shipToPlace.alpha = 0.5;
 						action = "positionShip"; 
 						break;
 					
