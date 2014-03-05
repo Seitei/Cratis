@@ -434,13 +434,13 @@ package utils
 			_mode = mode;
 			_doContainer = object;
 			
-			_doContainer.addEventListener(KeyboardEvent.KEY_DOWN, onMoveObject);
-			_doContainer.addEventListener(KeyboardEvent.KEY_UP, onFinishedMovingObject);
-			_doContainer.addEventListener(KeyboardEvent.KEY_DOWN, showAlpha);
-			
 			recurseStage(object);
 			
 			if(_mode == "write"){
+				
+				_doContainer.addEventListener(KeyboardEvent.KEY_DOWN, onMoveObject);
+				_doContainer.addEventListener(KeyboardEvent.KEY_UP, onFinishedMovingObject);
+				_doContainer.addEventListener(KeyboardEvent.KEY_DOWN, showAlpha);
 				
 				_doContainer.addEventListener(TouchEvent.TOUCH, onContainerTouch);
 				

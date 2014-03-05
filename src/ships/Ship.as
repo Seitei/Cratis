@@ -4,6 +4,9 @@ package ships
 	import starling.display.Quad;
 	import starling.display.Sprite;
 	import starling.events.Event;
+	import starling.events.Touch;
+	import starling.events.TouchEvent;
+	import starling.events.TouchPhase;
 	import starling.text.TextField;
 	import starling.textures.Texture;
 	import starling.utils.Color;
@@ -47,17 +50,9 @@ package ships
 			_attackPower = attackPower;
 			_sideView = sideView;
 			_topView = topView;
-			_topView.visible = false;
-			
-			_border = Border.createBorder(this.width, this.height, Color.AQUA, 1);
-			_border.alpha = 0.70;
-			addChild(_border);
-			_border.visible = false;
-			
-			this.pivotX = this.width / 2;
-			this.pivotY = this.height / 2;
 			
 			_placed = false;
+			_position = new Array();
 			
 			_disable = new Quad(this.width, this.height, Color.BLACK);
 			_disable.alpha = 0.4;
@@ -66,6 +61,59 @@ package ships
 			
 			createState(_state);
 			
+			_border = Border.createBorder(this.width, this.height, Color.WHITE, 1.5);
+			_border.alpha = 1;
+			addChild(_border);
+			_border.visible = false;
+			
+			this.pivotX = this.width / 2;
+			this.pivotY = this.height / 2;
+			
+			addEventListener(TouchEvent.TOUCH, onTouch);
+			
+		}
+		
+		private function onTouch(e:TouchEvent):void {
+			
+			var endedTouch:Touch = e.getTouch(this, TouchPhase.ENDED); 
+			var hoverTouch:Touch = e.getTouch(this, TouchPhase.HOVER);
+			
+			if(hoverTouch)
+				highlight(true);
+			else 
+				highlight(false);
+			
+			var shipToPlace:Ship;
+			var action:String;
+			
+			if(endedTouch){
+				
+				switch(state) {
+					
+					case "detailed":
+						
+						shipToPlace = this.clone("placed");
+						action = "placeShip";
+						break;
+					
+					case "placed":
+						
+						shipToPlace = this.clone("placed");
+						shipToPlace.alpha = 0.5;
+						action = "positionShip"; 
+						break;
+					
+					case "fleet":
+						
+						shipToPlace = this.clone("placed");
+						action = "showDetails";
+						break;
+					
+				}
+				
+				dispatchEventWith("onShipTouch", true, {"touchedShip": this, "shipToPlace": shipToPlace, "action": action});
+				
+			}
 		}
 		
 		private function createSizeBoxes(size:int):void {
@@ -136,6 +184,7 @@ package ships
 			
 			switch(state) {
 				
+				//(picking phase)
 				case "detailed":
 					
 					createCostSquares();
@@ -153,15 +202,20 @@ package ships
 					
 					
 					
-					
-					
 					break;
 				
+				//(top view)
 				case "placed":
 					
+					addChild(_topView);
+					
 					break;
 				
+				//(your current ships)
 				case "fleet":
+					
+					
+					
 					
 					break;
 				
@@ -245,26 +299,15 @@ package ships
 			_placed = value;
 		}
 
-		public function clone():Ship {
+		public function clone(state:String):Ship {
 			
 			var sideView:Image = new Image(Texture.fromTexture(this._sideView.texture));
 			var topView:Image = new Image(Texture.fromTexture(this._topView.texture));
 			
-			var clonedShip:Ship = new Ship(this.shipName, this.cost, this.size, this.attackPower, this.special, sideView, topView, this.state); 
+			var clonedShip:Ship = new Ship(this.shipName, this.cost, this.size, this.attackPower, this.special, sideView, topView, state); 
+			clonedShip.rotation = this.rotation;
 			
 			return clonedShip;
-		}
-		
-		public function showView(view:String):void {
-		
-			if(view == "top"){
-				_sideView.visible = false;
-				_topView.visible = true;
-			}
-			else {
-				_sideView.visible = true;
-				_topView.visible = false;
-			}
 		}
 		
 		public function get sunk():Boolean
@@ -279,7 +322,7 @@ package ships
 
 		
 
-		public function highlight(value:Boolean):void {
+		private function highlight(value:Boolean):void {
 			
 			_border.visible = value;
 			

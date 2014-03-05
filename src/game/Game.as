@@ -42,7 +42,7 @@ package game
 		private static const TILE_SIZE:int = 28;
 		private static const MINIMUM_SHIPS_TILES:int = 10; 
 		private static const MAXIMUM_SHIPS_TILES:int = 15;
-		private static const ALPHA_SPRITE_MODE:String = "write";
+		private static const ALPHA_SPRITE_MODE:String = "read";
 		
 		private var _myGrid:Sprite;
 		private var _enemyGrid:Sprite;
@@ -79,7 +79,8 @@ package game
 			_assetManager = assetManager;
 			super();
 			addEventListener(Event.ADDED_TO_STAGE, onAdded);
-	
+			
+			this.addEventListener("onShipTouch", onShipTouch);
 		}
 		
 		private function onAdded(e:Event):void {
@@ -270,17 +271,18 @@ package game
 			_carrier.y = 400;
 			_carrier.name = "carrier" + "_alpha";
 			addChild(_carrier);
-			_carrier.addEventListener(TouchEvent.TOUCH, onShipTouch);
+			//_carrier.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			
-			/*var battleshipSideImage:Image = new Image(_assetManager.getTexture("battleship_side_black"));
+			var battleshipSideImage:Image = new Image(_assetManager.getTexture("battleship_side_black"));
 			var battleshipTopImage:Image = new Image(_assetManager.getTexture("battleship_top"));
 			var battleshipSpecial:Special = new Special();
 			
 			_battleship = new Ship("battleship", 4, 4, 3, battleshipSpecial, battleshipSideImage, battleshipTopImage, "detailed");
 			_battleship.x = 50 + _battleship.pivotX;
 			_battleship.y = _carrier.y + 50;
+			_battleship.name = _battleship.shipName + "_alpha";
 			addChild(_battleship);
-			_battleship.addEventListener(TouchEvent.TOUCH, onShipTouch);
+			//_battleship.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			
 			var destroyerSideImage:Image = new Image(_assetManager.getTexture("destroyer_side_black"));
 			var destroyerTopImage:Image = new Image(_assetManager.getTexture("destroyer_top"));
@@ -289,8 +291,9 @@ package game
 			_destroyer = new Ship("destroyer", 3, 3, 1, destroyerSpecial, destroyerSideImage, destroyerTopImage, "detailed");
 			_destroyer.x = 50 + _destroyer.pivotX;
 			_destroyer.y = _battleship.y + 50;
+			_destroyer.name = _destroyer.shipName + "_alpha";
 			addChild(_destroyer);
-			_destroyer.addEventListener(TouchEvent.TOUCH, onShipTouch);
+			//_destroyer.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			
 			var patrolSideImage:Image = new Image(_assetManager.getTexture("patrol_side_black"));
 			var patrolTopImage:Image = new Image(_assetManager.getTexture("patrol_top"));
@@ -299,8 +302,9 @@ package game
 			_patrol = new Ship("patrol", 2, 2, 0, patrolSpecial, patrolSideImage, patrolTopImage, "detailed");
 			_patrol.x = 50 + _patrol.pivotX;
 			_patrol.y = _destroyer.y + 50;
+			_patrol.name = _patrol.shipName + "_alpha";
 			addChild(_patrol);
-			_patrol.addEventListener(TouchEvent.TOUCH, onShipTouch);
+			//_patrol.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			
 			var submarineSideImage:Image = new Image(_assetManager.getTexture("submarine_side_black"));
 			var submarineTopImage:Image = new Image(_assetManager.getTexture("submarine_top"));
@@ -309,8 +313,9 @@ package game
 			_submarine = new Ship("submarine", 2, 3, 1, submarineSpecial, submarineSideImage, submarineTopImage, "detailed");
 			_submarine.x = 50 + _submarine.pivotX;
 			_submarine.y = _destroyer.y + 50;
+			_submarine.name = _submarine.shipName + "_alpha";
 			addChild(_submarine);
-			_submarine.addEventListener(TouchEvent.TOUCH, onShipTouch);
+			//_submarine.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			
 			var cruiserSideImage:Image = new Image(_assetManager.getTexture("cruiser_side_black"));
 			var cruiserTopImage:Image = new Image(_assetManager.getTexture("cruiser_top"));
@@ -319,12 +324,13 @@ package game
 			_cruiser = new Ship("cruiser", 2, 3, 1, cruiserSpecial, cruiserSideImage, cruiserTopImage, "detailed");
 			_cruiser.x = 50 + _cruiser.pivotX;
 			_cruiser.y = _destroyer.y + 50;
+			_cruiser.name = _cruiser.shipName + "_alpha";
 			addChild(_cruiser);
-			_cruiser.addEventListener(TouchEvent.TOUCH, onShipTouch);*/
+			//_cruiser.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			
 			_shipsToPlace = new Array();
-			//_shipsToPlace.push(_carrier, _destroyer, _patrol, _battleship);
-			_shipsToPlace.push(_carrier);
+			_shipsToPlace.push(_carrier, _destroyer, _patrol, _battleship);
+			//_shipsToPlace.push(_carrier);
 		}
 		
 		private function setTouchableShips(value:Boolean):void {
@@ -348,51 +354,88 @@ package game
 			_myGrid.removeChild(ship, true);
 		}
 		
-		private function onShipTouch(e:TouchEvent):void {
+		private function onShipTouch(e:Event, data:Object):void {
 			
-			_touchedShip = Ship(e.currentTarget);
 			e.stopImmediatePropagation();
 			
-			var endedTouch:Touch = e.getTouch(_touchedShip, TouchPhase.ENDED); 
-			var hoverTouch:Touch = e.getTouch(_touchedShip, TouchPhase.HOVER);
+			_shipToPlace = data.shipToPlace;
+			_touchedShip = data.touchedShip;
 			
-			if(hoverTouch){
-				_touchedShip.highlight(true);
-			}
-			else {
-				_touchedShip.highlight(false);
+			switch(data.action) {
+				
+				case "placeShip":
+					
+					placeShip(_shipToPlace);
+					break;
+				
+				case "positionShip":
+					
+					Mouse.hide();
+					setTouchableShips(false);
+					_shipToPlace.touchable = false;
+					_shipToPlace.alpha = 0.5;
+					addChild(_shipToPlace);
+					
+					this.addEventListener(KeyboardEvent.KEY_UP, onRotatingShip);
+					this.addEventListener(TouchEvent.TOUCH, movingShip);
+					_myGrid.addEventListener(TouchEvent.TOUCH, positioningShip);
+					
+					_shipTiles = Border.createBorder(_touchedShip.size * TILE_SIZE, TILE_SIZE, Color.AQUA);
+					_shipTiles.x = -50;
+					_shipTiles.y = -50;
+					_shipTiles.pivotX = _shipTiles.width / 2;
+					_shipTiles.pivotY = _shipTiles.height / 2;
+					_shipTiles.rotation = _touchedShip.rotation;
+					
+					_myGrid.addChild(_shipTiles);
+					
+					break;
+				
 			}
 			
-			if(endedTouch){
-				
-				setTouchableShips(false);
-				this.addEventListener(KeyboardEvent.KEY_UP, onKeyDown);
-				this.addEventListener(TouchEvent.TOUCH, movingShip);
-				_myGrid.addEventListener(TouchEvent.TOUCH, positioningShip);
-				_shipToPlace = _touchedShip.clone();
-				_shipToPlace.showView("top");
-				_shipToPlace.rotation = _touchedShip.rotation;
-				_shipToPlace.touchable = false;
-				_shipToPlace.alpha = 0.5;
-				addChild(_shipToPlace);
-				
-				Mouse.hide();
-				_shipTiles = Border.createBorder(_touchedShip.size * TILE_SIZE, TILE_SIZE, Color.AQUA);
-				_shipTiles.x = -50;
-				_shipTiles.y = -50;
-				_shipTiles.pivotX = _shipTiles.width / 2;
-				_shipTiles.pivotY = _shipTiles.height / 2;
-				_shipTiles.rotation = _touchedShip.rotation;
-				
-				_myGrid.addChild(_shipTiles);
-				
-				if(_touchedShip.placed)
-					eraseShip(_touchedShip);	
-				
-			}
 		}
 		
-		private function onKeyDown(e:KeyboardEvent):void {
+		//TODO could be improved adding some logic
+		//place ship in a random position
+		private function placeShip(shipToPlace:Ship):void {
+			
+			var canPlace:Boolean = false;
+			
+			var xTile:int; 
+			var yTile:int;
+			
+			_myGrid.addChild(shipToPlace);
+			_placedShips.push(shipToPlace);
+			
+			while(canPlace == false) {
+				
+				xTile = Math.random() * TILES;
+				yTile = Math.random() * TILES;
+				
+				//shipToPlace.rotation = Math.round(Math.random()) * Math.PI/2;
+				
+				shipToPlace.x = xTile * TILE_SIZE;
+				shipToPlace.y = yTile * TILE_SIZE;
+				
+				shipToPlace.x += shipToPlace.rotation ? shipToPlace.pivotY : shipToPlace.pivotX;
+				shipToPlace.y += shipToPlace.rotation ? shipToPlace.pivotX : shipToPlace.pivotY;
+				
+				canPlace = checkIfCanPlaceShip(shipToPlace);
+				
+			}
+			
+			for(var i:int = 0; i < _shipToPlace.size; i ++){
+			
+				_myMap[xTile + i][yTile] = _shipToPlace.size;
+				_shipToPlace.position.push(new Point());
+				
+			}
+			
+			showMap(_myMap);
+		}
+			
+		
+		private function onRotatingShip(e:KeyboardEvent):void {
 			
 			if(e.charCode == Keyboard.SPACE){
 				
@@ -400,8 +443,6 @@ package game
 				_shipTiles.rotation = _shipToPlace.rotation;
 				
 			}
-			
-			
 		}
 		
 		private function movingShip(e:TouchEvent):void {
@@ -416,55 +457,33 @@ package game
 			}
 		}
 		
-		private function checkIfCanPlaceShip(xP:int, yP:int):void {
+		private function checkIfCanPlaceShip(shipToPlace:Ship, rectangle:Rectangle = null):Boolean {
 			
-			_canPlaceShip = true;
+			var canPlace:Boolean = true;
+			var rec:Rectangle;
 			
-			if(_shipToPlace.rotation == 0){
+			if(rectangle) 
+				rec = rectangle;
+			else
+				rec = shipToPlace.getBounds(this);	
+			
+			//the ship must be contained inside the grid
+			if(_myGrid.getBounds(this).containsRect(rec)){
 				
-				if( xP >= 0 && yP >= 0 && (xP + _touchedShip.size <= TILES)){
-					_canPlaceShip = true;
-				}
-				else {
-					_canPlaceShip = false;
-					return;
-				}
+				//check overlaping between ships
+				for each(var ship:Ship in _placedShips) {
+					
+					if(ship != shipToPlace && rec.intersects(ship.getBounds(this))){
+						canPlace = false;
+						break;
+					}
+				}	
 			}
 			else {
-				
-				if( yP >= 0 && (yP + _touchedShip.size <= TILES)){
-					_canPlaceShip = true;
-				}
-				else {
-					_canPlaceShip = false;
-					return;
-				}
+				canPlace = false;
 			}
 			
-			if(_shipToPlace.rotation != 0 && _touchedShip.size % 2 == 0)
-				xP --;	
-			
-			if(_shipToPlace.rotation == 0){
-				
-				for(var i:int = 0; i < _touchedShip.size; i ++){
-					
-					if(_myMap[xP + i][yP] != 0){
-						_canPlaceShip = false;
-						return;
-					}
-					
-				}
-			}
-			else {
-				
-				for(var j:int = 0; j < _touchedShip.size; j ++){
-					
-					if(_myMap[xP][yP + j] != 0){
-						_canPlaceShip = false;
-						return;
-					}
-				}
-			}
+			return canPlace;
 		}
 		
 		private function positioningShip(e:TouchEvent):void {
@@ -501,76 +520,32 @@ package game
 			
 			if(touch.phase == TouchPhase.BEGAN){
 				
-				if(_shipToPlace.rotation == 0) xP -= Math.floor(_touchedShip.size / 2);
-				if(_shipToPlace.rotation != 0) yP -= Math.floor(_touchedShip.size / 2);
+				if(!checkIfCanPlaceShip(null, _shipTiles.getBounds(this))) return;
 				
-				checkIfCanPlaceShip(xP, yP);
+				_shipToPlace.x = _shipTiles.x;
+				_shipToPlace.y = _shipTiles.y;
 				
-				if(!_canPlaceShip) return;
+				_myGrid.addChild(_shipToPlace);
+				this.removeEventListener(TouchEvent.TOUCH, movingShip);
+				_myGrid.removeEventListener(TouchEvent.TOUCH, positioningShip);
+				Mouse.show();
 				
-				var position:Array = new Array();
 				var point:Point;
 				
-				if(_shipToPlace.rotation == 0){
+				for(var i:int = 0; i < _shipToPlace.size; i ++){
 					
-					_shipToPlace.x = _shipTiles.x; 
-					_shipToPlace.y = _shipTiles.y;
-					_myGrid.addChild(_shipToPlace);
-					_shipToPlace.alpha = 1;
-					
-					this.removeEventListener(TouchEvent.TOUCH, movingShip);
-					_myGrid.removeEventListener(TouchEvent.TOUCH, positioningShip);
-					
-					_shipTiles.x = -50;
-					_shipTiles.y = -50;
-					
-					Mouse.show();
-					
-					for(var i:int = 0; i < _touchedShip.size; i ++){
-						
-						_myMap[xP + i][yP] = _touchedShip.size;
-						point = new Point(xP + i, yP);
-						position.push(point);
-					}
-					
-					setTouchableShips(true);
-					
+					_myMap[xP + i][yP] = _shipToPlace.size;
+					point = new Point(xP + i, yP);
+					_shipToPlace.position.push(point);
 				}
 				
-				if(_shipToPlace.rotation != 0){
-					
-					if(_touchedShip.size % 2 == 0)
-						xP --;	
-					
-					_shipToPlace.x = _shipTiles.x; 
-					_shipToPlace.y = _shipTiles.y;
-					_myGrid.addChild(_shipToPlace);
-					_shipToPlace.alpha = 1;
-					
-					this.removeEventListener(TouchEvent.TOUCH, movingShip);
-					_myGrid.removeEventListener(TouchEvent.TOUCH, positioningShip);
-					
-					_shipTiles.x = -50;
-					_shipTiles.y = -50;
-					
-					Mouse.show();
-					
-					for(var j:int = 0; j < _touchedShip.size; j ++){
-						
-						_myMap[xP][yP + j] = _touchedShip.size;
-						point = new Point(xP, yP + j);
-						position.push(point);
-					}
-					
-					setTouchableShips(true);
-				}
+				setTouchableShips(true);
 				
 				//debug
 				showMap(_myMap);
 				
 				_shipToPlace.touchable = true;
-				_shipToPlace.addEventListener(TouchEvent.TOUCH, onShipTouch);
-				_shipToPlace.position = position;
+				
 				_shipToPlace.placed = true;
 				
 				_placedShips.push(_shipToPlace);
@@ -578,7 +553,6 @@ package game
 				
 				if(!_touchedShip.placed)
 					updateTilesCounter(_shipToPlace.size);
-				
 				
 			}
 		}
