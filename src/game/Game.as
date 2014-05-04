@@ -32,6 +32,7 @@ package game
 	import starling.utils.Color;
 	
 	import utils.AlphaSprite;
+	import utils.Bar;
 	import utils.Border;
 	import utils.ExtendedButton;
 	
@@ -70,7 +71,9 @@ package game
 		private var _attackedTiles:Array;
 		private var _player:Player;
 		private var _assetManager:AssetManager;
-		
+		private var _costBar:Quad;
+		private var _hpBar:Bar;
+		private var _attackBar:Bar;
 		
 		public function Game(player:Player, assetManager:AssetManager)
 		{
@@ -119,6 +122,9 @@ package game
 			
 			buildGrids();
 			initShips();
+			createCostBar(AVAILABLE_COST);
+			createHpBar();
+			createAttackBar();
 			
 			//visual aid used to select where to attack
 			_tile = Border.createBorder(TILE_SIZE, TILE_SIZE, Color.AQUA);
@@ -238,25 +244,6 @@ package game
 			
 		}
 		
-		private function updateCost(cost:int):void {
-			
-			_spent += cost;
-			
-			if(_spent >= MINIMUM_COST_TO_SPEND){
-				_doneButton.enabled = true;
-			}
-			
-			//loop though ships to see which ones can't be placed because of their cost
-			for each(var ship:Ship in _fleetRoster){
-				
-				if(ship.cost > AVAILABLE_COST - _spent){
-					ship.disable();
-				}
-				
-			}
-			
-		}
-		
 		private function initShips():void {
 			
 			_assetManager.getTexture("patrol_side");
@@ -264,6 +251,7 @@ package game
 			var carrierSideImage:Image = new Image(_assetManager.getTexture("carrier_side_black"));
 			var carrierTopImage:Image = new Image(_assetManager.getTexture("carrier_top"));
 			var carrierSpecial:Special = new Special();
+			
 			
 			_carrier = new Ship("carrier", 4, 5, 2, carrierSpecial, carrierSideImage, carrierTopImage, "detailed");
 			_carrier.x = 50 + _carrier.pivotX;
@@ -328,7 +316,7 @@ package game
 			//_cruiser.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			
 			_fleetRoster = new Array();
-			_fleetRoster.push(_carrier, _destroyer, _patrol, _battleship);
+			_fleetRoster.push(_carrier, _destroyer, _patrol, _battleship, _submarine, _cruiser);
 			//_shipsToPlace.push(_carrier);
 		}
 		
@@ -424,6 +412,12 @@ package game
 			
 			writeShip(shipToPlace, xTile, yTile);
 			
+			_hpBar.increaseUnits(_shipToPlace.size);
+			
+			_attackBar.increaseUnits(_shipToPlace.attackPower);
+			
+			updateCost(_shipToPlace.cost);
+			
 			showMap(_myMap);
 		}
 		
@@ -449,6 +443,70 @@ package game
 				_shipTiles.rotation = _shipToPlace.rotation;
 				
 			}
+		}
+		
+		private function createCostBar(maxCost:int):void {
+		
+			var container:Sprite = new Sprite();
+			_costBar = new Quad(8 * AVAILABLE_COST, 8, 0x00AEEF);
+			container.addChild(_costBar);
+			container.name = "costBar";
+			
+			for(var i:int = 1; i < AVAILABLE_COST; i ++){
+				
+				var bQuad:Quad = new Quad(1, 8, Color.BLACK);
+				bQuad.alpha = 0.2;
+				bQuad.x = i * 8;
+				container.addChild(bQuad);
+				
+				var wQuad:Quad = new Quad(1, 8, Color.WHITE);
+				wQuad.alpha = 0.25;
+				wQuad.x = i * 8 + 1;
+				container.addChild(wQuad);
+				
+			}
+			
+			Border.createBorder(8 * AVAILABLE_COST, 8, Color.BLACK, 1, container);
+			addChild(container);
+			
+		}
+		
+		
+		
+		private function updateCost(cost:int):void {
+			
+			_spent += cost;
+			_costBar.width = (AVAILABLE_COST - _spent) * 8; 
+			
+			if(!_doneButton.enabled && _spent >= MINIMUM_COST_TO_SPEND){
+				_doneButton.enabled = true;
+			}
+			
+			//loop though ships to see which ones can't be placed because of their cost
+			for each(var ship:Ship in _fleetRoster){
+				
+				if(ship.cost > AVAILABLE_COST - _spent){
+					ship.disable();
+				}
+			}
+			
+			
+		}
+		
+		private function createHpBar():void {
+			
+			_hpBar = new Bar(new Image(_assetManager.getTexture("hp_bar_bg")), new Image(_assetManager.getTexture("hp_bar_border")));
+			_hpBar.name = "hp_bar";
+			addChild(_hpBar);
+				
+		}
+		
+		private function createAttackBar():void {
+			
+			_attackBar = new Bar(new Image(_assetManager.getTexture("attack_bar_bg")), new Image(_assetManager.getTexture("attack_bar_border")));
+			_attackBar.name = "attack_bar";
+			addChild(_attackBar);
+			
 		}
 		
 		private function checkIfCanPlaceShip(shipToPlace:Ship, rectangle:Rectangle = null, touchedShip:Ship = null):Boolean {
@@ -547,8 +605,6 @@ package game
 				_totalAttackPower += _shipToPlace.attackPower;
 				
 				eraseShip(_touchedShip);
-				
-				updateCost(_shipToPlace.size);
 				
 				writeShip(_shipToPlace, xP, yP);
 				

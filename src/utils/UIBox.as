@@ -52,10 +52,10 @@ package utils
 
 		public function updateUI():void {
 			
-			Border.createBorder(_selectedDo.width, _selectedDo.height, _type == "alpha" ? Color.RED : Color.AQUA, 1, _highlightBox);
-			Border.createBorder(_selectedDo.width, _selectedDo.height, _type == "alpha" ? Color.RED : Color.AQUA, 1, _selectionBox);
-			
 			var sDORect:Rectangle = _selectedDo.getBounds(stage);
+			
+			Border.createBorder(sDORect.width, sDORect.height, _type == "alpha" ? Color.RED : Color.AQUA, 1, _highlightBox);
+			Border.createBorder(sDORect.width, sDORect.height, _type == "alpha" ? Color.RED : Color.AQUA, 1, _selectionBox);
 			
 			this.x = sDORect.left;//_selectedDo.localToGlobal(new Point()).x;
 			this.y = sDORect.top;//_selectedDo.localToGlobal(new Point()).y;

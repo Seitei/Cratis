@@ -118,7 +118,7 @@ package ships
 		private function createSizeBoxes(size:int):void {
 		
 			_sizeBoxesContainer = new Sprite();
-			_sizeBoxesContainer.name = this.shipName + "_sizeBoxesContainer";
+			//_sizeBoxesContainer.name = this.shipName + "_sizeBoxesContainer";
 			addChild(_sizeBoxesContainer);
 			
 			//horizontals
@@ -146,10 +146,9 @@ package ships
 		private function createCostSquares():void {
 			
 			_costSquaresContainer = new Sprite();
-			_costSquaresContainer.name = this.shipName + "_costSquaresContainer";
 			addChild(_costSquaresContainer);
 			
-			for(var i:int = 0; i <= _cost; i++){
+			for(var i:int = 0; i < _cost; i++){
 				
 				var costQuadContainer:Sprite = new Sprite();
 				var costQuad:Quad = new Quad(8, 8, 0x00AEEF);
@@ -159,12 +158,14 @@ package ships
 				_costSquaresContainer.addChild(costQuadContainer);
 				
 			}
+			
+			_costSquaresContainer.x = _sizeBoxesContainer.width - _costSquaresContainer.width; 
+			_costSquaresContainer.y = -_costSquaresContainer.height - 3;
 		}
 		
 		private function createAttackSquares():void {
 			
 			_attackSquaresContainer = new Sprite();
-			_attackSquaresContainer.name = this.shipName + "_attackSquaresContainer";
 			addChild(_attackSquaresContainer);
 			
 			for(var i:int = 0; i <= _attackPower; i++){
@@ -177,6 +178,9 @@ package ships
 				_attackSquaresContainer.addChild(attackQuadContainer);
 				
 			}
+			
+			_attackSquaresContainer.y = _sizeBoxesContainer.height + 3;
+				
 		}
 		
 		private function createState(state:String):void {
@@ -186,28 +190,23 @@ package ships
 				//(picking phase)
 				case "detailed":
 					
-					createCostSquares();
 					createSizeBoxes(size);
-					createAttackSquares();
+					createCostSquares();
+					//createAttackSquares();
 					addChild(_sideView);
-					_sideView.name = this.shipName + "_sideView";
 					
-					_shipNameTxt = new TextField(75, 35, this.shipName.toUpperCase(), "Consolas", 12, Color.BLACK);
-					_shipNameTxt.name = this.shipName + "Txt";
+					_shipNameTxt = new TextField(75, 20, this.shipName.toUpperCase(), "Consolas", 12, Color.BLACK);
 					_shipNameTxt.hAlign = HAlign.LEFT;
+					_shipNameTxt.y = - _shipNameTxt.height;
+					
 					addChild(_shipNameTxt);
-					
-					
-					
-					
-					
+						
 					break;
 				
 				//(top view)
 				case "placed":
 					
 					addChild(_topView);
-					
 					break;
 				
 				//(your current ships)

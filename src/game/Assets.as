@@ -26,8 +26,10 @@ package game
 			 "assets/attacked_tile.png",
 		     "assets/background.png",
 			 "assets/ship_tiles_counter.png",
-			
-			
+			 "assets/hp_bar_border.png",
+			 "assets/hp_bar_bg.png",
+			 "assets/attack_bar_border.png",
+			 "assets/attack_bar_bg.png"
 			
 			]
 			;
