@@ -4,6 +4,8 @@ package
 	
 	import starling.events.EventDispatcher;
 	import starling.utils.AssetManager;
+	
+	import utils.Utils;
 
 	public class Turns extends EventDispatcher
 	{
@@ -33,23 +35,25 @@ package
 			}
 			
 			if(_myTurnEnded)
-				start();
-				
+				result();
+			
+			//Utils.showMap(data.data.map);
 				
 		}
 		
 		//TODO
 		//for the moment we only need 0 and 1 lifespan types, more complex games could require more options
-		public function createState(stateName:String, start:Object, end:Object, send:Object, receive:Object, lifeSpan:int):void {
+		public function createState(stateName:String, start:Object, end:Object, result:Object, send:Object, receive:Object, lifeSpan:int, phaseChangeMessage:Object = null):void {
 			
 			_states[stateName] = new Dictionary();
 			
 			_states[stateName]["start"] = start;
 			_states[stateName]["end"] = end;
+			_states[stateName]["result"] = result;
 			_states[stateName]["life_span"] = lifeSpan;
 			_states[stateName]["send"] = send;
 			_states[stateName]["receive"] = receive;
-			
+			_states[stateName]["phaseChangeMessage"] = phaseChangeMessage;
 			_stateNames.push(stateName);
 
 			if(!_state) _state = stateName;
@@ -69,6 +73,17 @@ package
 			_myTurnEnded = false;
 			_enemyTurnEnded = false;
 			executeTurn("start");
+				
+			
+		}
+		
+		public function result():void {
+			
+			_myTurnEnded = false;
+			_enemyTurnEnded = false;
+			executeTurn("result");
+			
+			
 		}
 		
 		public function end():void {
@@ -77,11 +92,11 @@ package
 			
 			dispatchEventWith("sendData", false, _states[_state]["send"]);
 			
+			if(_enemyTurnEnded)
+				result();
+			
 			if(_states[_state]["life_span"] == 1)
 				advanceState();
-			
-			if(_enemyTurnEnded)
-				start();
 			
 			_myTurnEnded = true;
 			
@@ -96,19 +111,23 @@ package
 				
 				var action:Object = _states[_state][phase];
 				
-				if(type == "var_property")
-					action.var_property[0][action.var_property[1]] = action.var_property[2];
+				if(type.indexOf("var_property") != -1)
+					action[type][0][action[type][1]] = action[type][2];
 
-				if(type == "method"){
+				if(type.indexOf("method") != -1 && type.indexOf("var_method") == -1){
 					var meParams:Array = action[type].slice(1);				
 					action.method[0].apply(null, meParams);
 				}
 				
-				if(type == "var_method"){
+				if(type.indexOf("var_method") != -1){
 					var vmParams:Array = action[type].slice(2);
 					action.var_method[0][action.var_method[1]].apply(null, vmParams);
 				}
+				
 			}
+			
+			if(_states[_state]["phaseChangeMessage"] && phase == "start")
+				_states[_state]["phaseChangeMessage"].showMessage(_states[_state]["phaseChangeMessage"].phrase);
 			
 		}
 		

@@ -29,8 +29,12 @@ package game
 			 "assets/hp_bar_border.png",
 			 "assets/hp_bar_bg.png",
 			 "assets/attack_bar_border.png",
-			 "assets/attack_bar_bg.png"
-			
+			 "assets/attack_bar_bg.png",
+			//done_button
+			 "assets/done_button_up.png",
+			 "assets/done_button_disabled.png",
+			 "assets/done_button_hover.png"
+			 
 			]
 			;
 		

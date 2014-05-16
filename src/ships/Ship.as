@@ -102,6 +102,7 @@ package ships
 						action = "positionShip"; 
 						break;
 					
+					//unused for now
 					case "fleet":
 						
 						shipToPlace = this.clone("placed");
@@ -192,7 +193,7 @@ package ships
 					
 					createSizeBoxes(size);
 					createCostSquares();
-					//createAttackSquares();
+					createAttackSquares();
 					addChild(_sideView);
 					
 					_shipNameTxt = new TextField(75, 20, this.shipName.toUpperCase(), "Consolas", 12, Color.BLACK);
@@ -212,11 +213,10 @@ package ships
 				//(your current ships)
 				case "fleet":
 					
-					
+					addChild(_sideView);
 					
 					
 					break;
-				
 				
 				
 			}
@@ -297,13 +297,13 @@ package ships
 			_placed = value;
 		}
 
-		public function clone(state:String):Ship {
+		public function clone(state:String, preferredRotation:Number = NaN):Ship {
 			
 			var sideView:Image = new Image(Texture.fromTexture(this._sideView.texture));
 			var topView:Image = new Image(Texture.fromTexture(this._topView.texture));
 			
 			var clonedShip:Ship = new Ship(this.shipName, this.cost, this.size, this.attackPower, this.special, sideView, topView, state); 
-			clonedShip.rotation = this.rotation;
+			clonedShip.rotation = isNaN(preferredRotation) ? this.rotation : preferredRotation; 
 			
 			return clonedShip;
 		}

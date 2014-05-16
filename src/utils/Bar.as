@@ -15,6 +15,7 @@ package utils
 		private var _mask:PixelMaskDisplayObject;
 		private var _hpDivisors:Array;
 		private var _divisorsContainer:PixelMaskDisplayObject;
+		private var _units:int;
 		
 		public function Bar(background:DisplayObject, border:DisplayObject)
 		{
@@ -24,6 +25,16 @@ package utils
 			_hpDivisors = new Array();
 		}
 		
+		public function get units():int
+		{
+			return _units;
+		}
+
+		public function set units(value:int):void
+		{
+			_units = value;
+		}
+
 		private function onAdded(e:Event):void {
 			
 			_mask = new PixelMaskDisplayObject();
@@ -38,6 +49,8 @@ package utils
 		
 		public function increaseUnits(value:int):void {
 			
+			
+			_units += value;
 			
 			if(_hpDivisors.length == 0) value --;
 				
@@ -65,15 +78,26 @@ package utils
 				_hpDivisors[j].x = (j + 1) * (this.width / (_hpDivisors.length + 1));
 				
 			}
-			
 		}
 		
-		public function updateHP(value:int):void {
+		public function update(value:int):void {
 			
 			_mask.mask.x -= (this.width / (_hpDivisors.length + 1)) * value;
-			
+			_units -= value;
 		}
+		
+		
 		
 		
 	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 }

@@ -15,6 +15,10 @@ package game
 	import ships.Ship;
 	import ships.Special;
 	
+	import starling.animation.Transitions;
+	import starling.animation.Tween;
+	import starling.core.Starling;
+	import starling.display.Button;
 	import starling.display.DisplayObject;
 	import starling.display.DisplayObjectContainer;
 	import starling.display.Image;
@@ -30,11 +34,13 @@ package game
 	import starling.textures.Texture;
 	import starling.utils.AssetManager;
 	import starling.utils.Color;
+	import starling.utils.HAlign;
 	
 	import utils.AlphaSprite;
 	import utils.Bar;
 	import utils.Border;
 	import utils.ExtendedButton;
+	import utils.Utils;
 	
 	public class Game extends Sprite implements IGame
 	{
@@ -67,6 +73,7 @@ package game
 		private var _fleetRoster:Array;
 		private var _totalAttackPower:int;
 		private var _myAttacks:Array;
+		private var _enemyAttacks:Array;
 		private var _tile:Sprite;
 		private var _attackedTiles:Array;
 		private var _player:Player;
@@ -74,6 +81,7 @@ package game
 		private var _costBar:Quad;
 		private var _hpBar:Bar;
 		private var _attackBar:Bar;
+		private var _phaseMessageContent:Sprite;
 		
 		public function Game(player:Player, assetManager:AssetManager)
 		{
@@ -91,7 +99,7 @@ package game
 			var bgImage:Image = new Image(_assetManager.getTexture("background"));
 			//bgImage.name = "main_background";
 			addChild(bgImage);
-			
+			_phaseMessageContent = new Sprite();
 			_myAttacks = new Array();
 			
 			_player.turn = new Turns();
@@ -132,20 +140,22 @@ package game
 			_enemyGrid.addChild(_tile);
 			
 			//done placing button
-			var upState:Quad = new Quad(20, 20, Color.AQUA);
+			var upState:Image = new Image(_assetManager.getTexture("done_button_up"));
 			upState.name = "up0000";
-			var downState:Quad = new Quad(20, 20, Color.AQUA);
-			downState.name = "down0000";
-			var hoverState:Quad = new Quad(20, 20, Color.AQUA);
+			var hoverState:Image = new Image(_assetManager.getTexture("done_button_hover"));
 			hoverState.name = "hover0000";
+			var downState:Image = new Image(_assetManager.getTexture("done_button_hover"));
+			downState.name = "down0000";
+			var disabledState:Image = new Image(_assetManager.getTexture("done_button_disabled"));
+			disabledState.name = "disabled0000";
 			
 			var buttonsStates:Array = new Array;
-			buttonsStates.push(upState, downState, hoverState);
+			buttonsStates.push(upState, downState, hoverState, disabledState);
+			
 			_doneButton = new ExtendedButton(buttonsStates);
 			_doneButton.enabled = false;
+			_doneButton.name = "done_button";
 			
-			_doneButton.x = 310;
-			_doneButton.y = 335;
 			_doneButton.addEventListener("buttonTriggeredEvent", onMyTurnEnd);
 			addChild(_doneButton);
 			
@@ -174,12 +184,18 @@ package game
 				 "method": [setTouchableShips, false], 
 				 "var_property": [_doneButton, "enabled", false]
 				},
+				//result
+				{
+					"method": [displaySelectedShips] 
+				},
 				//send
 				{"map": _myMap}, 
 				//receive
 				{"map": _enemyMap},
 				//lifespan
-				1); 
+				1,
+				{"showMessage": showMessage, "phrase": "PLACE YOUR SHIPS"}	
+			); 
 			
 			
 			//the attack/action phase
@@ -188,26 +204,104 @@ package game
 				"ATTACKING",
 				//start
 				{
-				 "var_property": [_enemyGrid, "touchable", true],
-				 "var_method": [_enemyGrid, "addEventListener", TouchEvent.TOUCH, onEnemyGridTouched]
+				 "var_property1": [_enemyGrid, "touchable", true],
+				 "var_method": [_enemyGrid, "addEventListener", TouchEvent.TOUCH, onEnemyGridTouched],
+				 "var_property2": [_doneButton, "enabled", false]
 				},
 				//end
 				{
-				 "var_property": [_enemyGrid, "touchable", false], 
-				 "var_method": [_enemyGrid, "removeEventListener", TouchEvent.TOUCH, onEnemyGridTouched]
+				 "var_property1": [_enemyGrid, "touchable", false], 
+				 "var_method": [_enemyGrid, "removeEventListener", TouchEvent.TOUCH, onEnemyGridTouched],
+				 "var_property2": [_doneButton, "enabled", false]
+				},
+				//result
+				{
+					"method": [displayAttacks] 
 				},
 				//send
 				{"attacks": _myAttacks},
 				//receive
-				{"attacks": receiveEnemyAttacks},
-				0);
+				{"attacks": _enemyAttacks},
+				0,
+				{"showMessage": showMessage, "phrase": "ATTACK!"}	
+			);
 			
 		}
 		
-		private function receiveEnemyAttacks(attacks:Array):void {
+		private function displaySelectedShips():void {
+			
+			fadeShips();
+			
+			
+		}
+		
+		private function fadeShips():void {
+			
+			for each(var ship:Ship in _fleetRoster){
+				
+				var tween:Tween = new Tween(ship, 1, Transitions.LINEAR);
+				tween.animate("alpha", 0);
+				Starling.juggler.add(tween);
+				tween.onComplete = onCompleteShipFadeTransition;
+				tween.onCompleteArgs = [ship];
+			}
+			
+			for (var i:int = 0; i < _myFleet.length; i++){
+				
+				var clonedShip:Ship = _myFleet[i].clone("fleet", 0);
+				addChild(clonedShip);
+				clonedShip.x = - clonedShip.width - 35;
+				clonedShip.y = (stage.height / 2) + 150 + i * 40;
+				
+				var tween2:Tween = new Tween(clonedShip, 2, Transitions.EASE_IN_OUT);
+				tween2.animate("x", (clonedShip.width / 2) + 20);
+				Starling.juggler.add(tween2);
+				//tween2.onComplete = onCompleteShipFadeTransition;
+				
+				
+				
+			}
+			
+			
+		}
+		
+		private function onCompleteShipFadeTransition(ship:Ship):void {
+			
+			removeChild(ship, true);
+		}
+		
+		
+		
+		
+		private function displayAttacks():void {
 			
 			
 			
+		}
+		
+		
+		private function showMessage(message:String):void {
+			
+			//content
+			var messageTxt:TextField = new TextField(stage.stageWidth, stage.stageHeight, message, "Consolas", 50, Color.BLACK);
+			messageTxt.hAlign = HAlign.CENTER;
+			//messageTxt.y = stage.stageHeight / 2;
+			_phaseMessageContent.addChild(messageTxt);
+			addChild(_phaseMessageContent);
+			
+			//transition effect
+			var tween:Tween = new Tween(messageTxt, 2, Transitions.EASE_IN);
+			tween.delay = 1;
+			tween.animate("alpha", 0);
+			Starling.juggler.add(tween);
+			tween.onComplete = onCompletePhaseMessageTransition;
+			
+			
+		}
+		
+		private function onCompletePhaseMessageTransition():void {
+			
+			removeChild(_phaseMessageContent, true);
 		}
 		
 		private function onEnemyGridTouched(e:TouchEvent):void {
@@ -218,7 +312,6 @@ package game
 			var xP:int = Math.floor(mousePos.x / TILE_SIZE);
 			var yP:int = Math.floor(mousePos.y / TILE_SIZE);
 			
-			
 			if(touch.phase == TouchPhase.HOVER){
 				
 				_tile.x = xP * TILE_SIZE;
@@ -228,14 +321,24 @@ package game
 			
 			if(touch.phase == TouchPhase.BEGAN){
 				
-				_myAttacks.push(xP, yP);	
+				_myAttacks.push([xP, yP]);	
 				var attackedTile:Image = new Image(_assetManager.getTexture("attacked_tile"));
-				attackedTile.x = _tile.x;
-				attackedTile.y = _tile.y;
+				attackedTile.x = _tile.x + 1;
+				attackedTile.y = _tile.y + 1;
 				_enemyGrid.addChild(attackedTile);
 				_attackedTiles.push(attackedTile);
 				
+				_attackBar.update(1);
+				
+				if(_attackBar.units == 0){
+					_enemyGrid.removeEventListener(TouchEvent.TOUCH, onEnemyGridTouched);
+					_doneButton.enabled = true;
+				}
 			}
+			
+			
+			
+			
 		}
 		
 		private function onMyTurnEnd(e:Event):void {
@@ -418,7 +521,7 @@ package game
 			
 			updateCost(_shipToPlace.cost);
 			
-			showMap(_myMap);
+			//Utils.showMap(_myMap);
 		}
 		
 		private function writeShip(ship:Ship, xTile:int, yTile:int):void {
@@ -609,7 +712,7 @@ package game
 				writeShip(_shipToPlace, xP, yP);
 				
 				//debug
-				showMap(_myMap);
+				//showMap(_myMap);
 				
 			}
 		}
@@ -677,23 +780,6 @@ package game
 			_myGrid.clipRect = new Rectangle(0, 0, _myGrid.width, _myGrid.height);
 			_enemyGrid.clipRect = new Rectangle(0, 0, _enemyGrid.width, _enemyGrid.height);
 			
-		}
-		
-		
-		
-		//debugging purposes
-		private function showMap(map:Array):void {
-			
-			var output:String = "";
-			
-			for( var i:int = 0; i < TILES; i ++){
-				for( var j:int = 0; j < TILES; j ++){
-					output += map[j][i] + " ";	
-				}
-				output += "\n";
-			}
-			
-			trace(output);
 		}
 		
 		
