@@ -13,6 +13,7 @@ package game
 	import interfaces.IGame;
 	
 	import ships.Ship;
+	import ships.ShipFactory;
 	import ships.Special;
 	
 	import starling.animation.Transitions;
@@ -49,12 +50,13 @@ package game
 		private static const TILE_SIZE:int = 28;
 		private static const MINIMUM_COST_TO_SPEND:int = 10; 
 		private static const AVAILABLE_COST:int = 15;
-		private static const ALPHA_SPRITE_MODE:String = "read";
+		private static const ALPHA_SPRITE_MODE:String = "write";
 		
 		private var _myGrid:Sprite;
 		private var _enemyGrid:Sprite;
 		private var _myMap:Array;
 		private var _enemyMap:Array;
+		private var _enemyFleet:Array;
 		
 		private var _carrier:Ship;
 		private var _patrol:Ship;
@@ -78,10 +80,14 @@ package game
 		private var _attackedTiles:Array;
 		private var _player:Player;
 		private var _assetManager:AssetManager;
-		private var _costBar:Quad;
-		private var _hpBar:Bar;
-		private var _attackBar:Bar;
+		private var _costBar:Bar;
+		private var _myHpBar:Bar;
+		private var _enemyHpBar:Bar;
+		private var _myAttackBar:Bar;
+		private var _enemyAttackBar:Bar;
 		private var _phaseMessageContent:Sprite;
+		private var _myFleetCondensed:Array;
+		private var _shipFactory:ShipFactory;
 		
 		public function Game(player:Player, assetManager:AssetManager)
 		{
@@ -89,12 +95,14 @@ package game
 			_assetManager = assetManager;
 			super();
 			addEventListener(Event.ADDED_TO_STAGE, onAdded);
+			_myFleetCondensed = new Array();
 			
 			this.addEventListener("onShipTouch", onShipTouch);
 		}
 		
 		private function onAdded(e:Event):void {
 			
+			this.addEventListener(KeyboardEvent.KEY_DOWN, onDeactivateAlphaSprite);
 			//background
 			var bgImage:Image = new Image(_assetManager.getTexture("background"));
 			//bgImage.name = "main_background";
@@ -160,6 +168,7 @@ package game
 			addChild(_doneButton);
 			
 			_myFleet = new Array();
+			_enemyFleet = new Array();
 			
 			createTurns();
 			
@@ -186,12 +195,12 @@ package game
 				},
 				//result
 				{
-					"method": [displaySelectedShips] 
+					"method": [displayShips] 
 				},
 				//send
-				{"map": _myMap}, 
+				 _myFleetCondensed, 
 				//receive
-				{"map": _enemyMap},
+				 processEnemyFleetCondensed,
 				//lifespan
 				1,
 				{"showMessage": showMessage, "phrase": "PLACE YOUR SHIPS"}	
@@ -228,46 +237,94 @@ package game
 			
 		}
 		
-		private function displaySelectedShips():void {
+		private function processEnemyFleetCondensed(fleet:Array):void {
 			
-			fadeShips();
+			//reconstruct enemy fleet
 			
+			for each(var obj:Object in fleet){
+				
+				_enemyFleet.push(_shipFactory.buildShip(obj.shipName, "fleet", obj.position));
+				
+			}
+			
+			_enemyFleet.sortOn("size", [Array.DESCENDING]);
+		}
+		
+		private function displayShips():void {
+			
+			fadeUI();
+			
+			_myFleet.sortOn("size", [Array.DESCENDING]);
+			
+			for (var i:int = 0; i < _myFleet.length; i++){
+				
+				var clonedShip:Ship = _myFleet[i].clone("fleet", 0);
+				addChild(clonedShip);
+				clonedShip.x = -70;
+				clonedShip.y = (stage.height / 2) + 120 + i * 30;
+				
+				var tween:Tween = new Tween(clonedShip, 2, Transitions.EASE_IN_OUT);
+				tween.animate("x", 10 + clonedShip.pivotX);
+				Starling.juggler.add(tween);
+				
+			}
+			
+			for (var j:int = 0; j < _enemyFleet.length; j++){
+				
+				var clonedShip2:Ship = _enemyFleet[j].clone("fleet", 0);
+				addChild(clonedShip2);
+				clonedShip2.x = stage.stageWidth + 70;
+				clonedShip2.y = (stage.height / 2) + 120 + j * 30;
+				
+				var tween2:Tween = new Tween(clonedShip2, 2, Transitions.EASE_IN_OUT);
+				tween2.animate("x", clonedShip2.x - clonedShip2.pivotX - 80);
+				clonedShip2.scaleX = -1;
+				Starling.juggler.add(tween2);
+				
+			}
+			
+			showEnemyBars();	
 			
 		}
 		
-		private function fadeShips():void {
+		
+		
+		private function fadeUI():void {
 			
 			for each(var ship:Ship in _fleetRoster){
 				
 				var tween:Tween = new Tween(ship, 1, Transitions.LINEAR);
 				tween.animate("alpha", 0);
 				Starling.juggler.add(tween);
-				tween.onComplete = onCompleteShipFadeTransition;
+				tween.onComplete = onCompleteFadeTransition;
 				tween.onCompleteArgs = [ship];
 			}
 			
-			for (var i:int = 0; i < _myFleet.length; i++){
+			var tween2:Tween = new Tween(_costBar, 1, Transitions.LINEAR);
+			tween2.animate("alpha", 0);
+			Starling.juggler.add(tween2);
+			tween2.onComplete = onCompleteFadeTransition;
+			tween2.onCompleteArgs = [_costBar];
+			
+			var bQuad:Quad = new Quad(1, 190, Color.BLACK);
+			bQuad.alpha = 0.2;
+			addChild(bQuad);
+			bQuad.y = 400;
 				
-				var clonedShip:Ship = _myFleet[i].clone("fleet", 0);
-				addChild(clonedShip);
-				clonedShip.x = - clonedShip.width - 35;
-				clonedShip.y = (stage.height / 2) + 150 + i * 40;
-				
-				var tween2:Tween = new Tween(clonedShip, 2, Transitions.EASE_IN_OUT);
-				tween2.animate("x", (clonedShip.width / 2) + 20);
-				Starling.juggler.add(tween2);
-				//tween2.onComplete = onCompleteShipFadeTransition;
-				
-				
-				
-			}
+			var wQuad:Quad = new Quad(1, 190, Color.WHITE);
+			wQuad.alpha = 0.25;
+			wQuad.y = 400;
+			addChild(wQuad);
+			
+			bQuad.x = stage.stageWidth / 2;
+			wQuad.x = stage.stageWidth / 2 + 1;
 			
 			
 		}
 		
-		private function onCompleteShipFadeTransition(ship:Ship):void {
+		private function onCompleteFadeTransition(dO:DisplayObject):void {
 			
-			removeChild(ship, true);
+			removeChild(dO, true);
 		}
 		
 		
@@ -328,9 +385,9 @@ package game
 				_enemyGrid.addChild(attackedTile);
 				_attackedTiles.push(attackedTile);
 				
-				_attackBar.update(1);
+				_myAttackBar.update(1);
 				
-				if(_attackBar.units == 0){
+				if(_myAttackBar.units == 0){
 					_enemyGrid.removeEventListener(TouchEvent.TOUCH, onEnemyGridTouched);
 					_doneButton.enabled = true;
 				}
@@ -349,74 +406,32 @@ package game
 		
 		private function initShips():void {
 			
-			_assetManager.getTexture("patrol_side");
+			_shipFactory = ShipFactory.getInstance();
+			_shipFactory.assetManager = _assetManager;
 			
-			var carrierSideImage:Image = new Image(_assetManager.getTexture("carrier_side_black"));
-			var carrierTopImage:Image = new Image(_assetManager.getTexture("carrier_top"));
-			var carrierSpecial:Special = new Special();
-			
-			
-			_carrier = new Ship("carrier", 4, 5, 2, carrierSpecial, carrierSideImage, carrierTopImage, "detailed");
-			_carrier.x = 50 + _carrier.pivotX;
-			_carrier.y = 400;
+			_carrier = _shipFactory.buildShip("carrier", "detailed", null);
 			_carrier.name = "carrier" + "_alpha";
 			addChild(_carrier);
-			//_carrier.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			
-			var battleshipSideImage:Image = new Image(_assetManager.getTexture("battleship_side_black"));
-			var battleshipTopImage:Image = new Image(_assetManager.getTexture("battleship_top"));
-			var battleshipSpecial:Special = new Special();
-			
-			_battleship = new Ship("battleship", 4, 4, 3, battleshipSpecial, battleshipSideImage, battleshipTopImage, "detailed");
-			_battleship.x = 50 + _battleship.pivotX;
-			_battleship.y = _carrier.y + 50;
-			_battleship.name = _battleship.shipName + "_alpha";
+			_battleship = _shipFactory.buildShip("battleship", "detailed", null);
+			_battleship.name = "battleship" + "_alpha";
 			addChild(_battleship);
-			//_battleship.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			
-			var destroyerSideImage:Image = new Image(_assetManager.getTexture("destroyer_side_black"));
-			var destroyerTopImage:Image = new Image(_assetManager.getTexture("destroyer_top"));
-			var destroyerSpecial:Special = new Special();
-			
-			_destroyer = new Ship("destroyer", 3, 3, 1, destroyerSpecial, destroyerSideImage, destroyerTopImage, "detailed");
-			_destroyer.x = 50 + _destroyer.pivotX;
-			_destroyer.y = _battleship.y + 50;
-			_destroyer.name = _destroyer.shipName + "_alpha";
+			_destroyer = _shipFactory.buildShip("destroyer", "detailed", null);
+			_destroyer.name = "destroyer" + "_alpha";
 			addChild(_destroyer);
-			//_destroyer.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			
-			var patrolSideImage:Image = new Image(_assetManager.getTexture("patrol_side_black"));
-			var patrolTopImage:Image = new Image(_assetManager.getTexture("patrol_top"));
-			var patrolSpecial:Special = new Special();
-			
-			_patrol = new Ship("patrol", 2, 2, 0, patrolSpecial, patrolSideImage, patrolTopImage, "detailed");
-			_patrol.x = 50 + _patrol.pivotX;
-			_patrol.y = _destroyer.y + 50;
-			_patrol.name = _patrol.shipName + "_alpha";
-			addChild(_patrol);
-			//_patrol.addEventListener(TouchEvent.TOUCH, onShipTouch);
-			
-			var submarineSideImage:Image = new Image(_assetManager.getTexture("submarine_side_black"));
-			var submarineTopImage:Image = new Image(_assetManager.getTexture("submarine_top"));
-			var submarineSpecial:Special = new Special();
-			
-			_submarine = new Ship("submarine", 2, 3, 1, submarineSpecial, submarineSideImage, submarineTopImage, "detailed");
-			_submarine.x = 50 + _submarine.pivotX;
-			_submarine.y = _destroyer.y + 50;
-			_submarine.name = _submarine.shipName + "_alpha";
+			_submarine = _shipFactory.buildShip("submarine", "detailed", null);
+			_submarine.name = "submarine" + "_alpha";
 			addChild(_submarine);
-			//_submarine.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			
-			var cruiserSideImage:Image = new Image(_assetManager.getTexture("cruiser_side_black"));
-			var cruiserTopImage:Image = new Image(_assetManager.getTexture("cruiser_top"));
-			var cruiserSpecial:Special = new Special();
+			_patrol = _shipFactory.buildShip("patrol", "detailed", null);
+			_patrol.name = "patrol" + "_alpha";
+			addChild(_patrol);
 			
-			_cruiser = new Ship("cruiser", 2, 3, 1, cruiserSpecial, cruiserSideImage, cruiserTopImage, "detailed");
-			_cruiser.x = 50 + _cruiser.pivotX;
-			_cruiser.y = _destroyer.y + 50;
-			_cruiser.name = _cruiser.shipName + "_alpha";
+			_cruiser = _shipFactory.buildShip("cruiser", "detailed", null);
+			_cruiser.name = "cruiser" + "_alpha";
 			addChild(_cruiser);
-			//_cruiser.addEventListener(TouchEvent.TOUCH, onShipTouch);
 			
 			_fleetRoster = new Array();
 			_fleetRoster.push(_carrier, _destroyer, _patrol, _battleship, _submarine, _cruiser);
@@ -515,9 +530,9 @@ package game
 			
 			writeShip(shipToPlace, xTile, yTile);
 			
-			_hpBar.increaseUnits(_shipToPlace.size);
+			_myHpBar.increaseUnits(_shipToPlace.size);
 			
-			_attackBar.increaseUnits(_shipToPlace.attackPower);
+			_myAttackBar.increaseUnits(_shipToPlace.attackPower);
 			
 			updateCost(_shipToPlace.cost);
 			
@@ -535,6 +550,7 @@ package game
 			}
 			
 			_myFleet.push(ship);
+			_myFleetCondensed.push({"shipName": ship.shipName, "position": ship.position});
 			
 		}
 		
@@ -548,38 +564,45 @@ package game
 			}
 		}
 		
-		private function createCostBar(maxCost:int):void {
-		
-			var container:Sprite = new Sprite();
-			_costBar = new Quad(8 * AVAILABLE_COST, 8, 0x00AEEF);
-			container.addChild(_costBar);
-			container.name = "costBar";
+		private function onDeactivateAlphaSprite(e:KeyboardEvent):void {
 			
-			for(var i:int = 1; i < AVAILABLE_COST; i ++){
+			if(e.keyCode == Keyboard.CONTROL){
 				
-				var bQuad:Quad = new Quad(1, 8, Color.BLACK);
-				bQuad.alpha = 0.2;
-				bQuad.x = i * 8;
-				container.addChild(bQuad);
-				
-				var wQuad:Quad = new Quad(1, 8, Color.WHITE);
-				wQuad.alpha = 0.25;
-				wQuad.x = i * 8 + 1;
-				container.addChild(wQuad);
+				AlphaSprite.getInstance().deactivate();
 				
 			}
+		}
+		
+		private function createCostBar(maxCost:int):void {
+		
+			_costBar = new Bar(new Image(_assetManager.getTexture("cost_bar_bg")), new Image(_assetManager.getTexture("cost_bar_border")));
+			addChild(_costBar);
+			_costBar.name = "costBar";
 			
-			Border.createBorder(8 * AVAILABLE_COST, 8, Color.BLACK, 1, container);
-			addChild(container);
+			_costBar.increaseUnits(15);
+			addChild(_costBar);
 			
 		}
 		
+		private function showEnemyBars():void {
+			
+			_enemyHpBar = new Bar(new Image(_assetManager.getTexture("hp_bar_bg")), new Image(_assetManager.getTexture("hp_bar_border")));
+			_enemyHpBar.name = "enemy_hp_bar";
+			_enemyHpBar.scaleX = -1;
+			addChild(_enemyHpBar);
+			
+			_enemyAttackBar = new Bar(new Image(_assetManager.getTexture("attack_bar_bg")), new Image(_assetManager.getTexture("attack_bar_border")));
+			_enemyAttackBar.name = "enemy_attack_bar";
+			_enemyAttackBar.scaleX = -1;
+			addChild(_enemyAttackBar);
+			
+		}
 		
 		
 		private function updateCost(cost:int):void {
 			
 			_spent += cost;
-			_costBar.width = (AVAILABLE_COST - _spent) * 8; 
+			_costBar.update(cost); 
 			
 			if(!_doneButton.enabled && _spent >= MINIMUM_COST_TO_SPEND){
 				_doneButton.enabled = true;
@@ -598,17 +621,17 @@ package game
 		
 		private function createHpBar():void {
 			
-			_hpBar = new Bar(new Image(_assetManager.getTexture("hp_bar_bg")), new Image(_assetManager.getTexture("hp_bar_border")));
-			_hpBar.name = "hp_bar";
-			addChild(_hpBar);
+			_myHpBar = new Bar(new Image(_assetManager.getTexture("hp_bar_bg")), new Image(_assetManager.getTexture("hp_bar_border")));
+			_myHpBar.name = "my_hp_bar";
+			addChild(_myHpBar);
 				
 		}
 		
 		private function createAttackBar():void {
 			
-			_attackBar = new Bar(new Image(_assetManager.getTexture("attack_bar_bg")), new Image(_assetManager.getTexture("attack_bar_border")));
-			_attackBar.name = "attack_bar";
-			addChild(_attackBar);
+			_myAttackBar = new Bar(new Image(_assetManager.getTexture("attack_bar_bg")), new Image(_assetManager.getTexture("attack_bar_border")));
+			_myAttackBar.name = "my_attack_bar";
+			addChild(_myAttackBar);
 			
 		}
 		

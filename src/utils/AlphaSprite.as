@@ -45,11 +45,13 @@ package utils
 		private var _mode:String;
 		private var _movingWithKeyboard:Boolean;
 		private var _alphaMode:Boolean = false;
+		private var _childrenListeners:Dictionary;
 		
 		public function AlphaSprite()
 		{
 			_displayObjectsDic = new Dictionary();
 			_displayObjectsArray = new Array();
+			_childrenListeners = new Dictionary();
 			_data = new XML();
 			_sharedObject = SharedObject.getLocal("data");
 			_UIBoxesDic = new Dictionary();
@@ -81,7 +83,7 @@ package utils
 					if(_mode == "write"){
 						
 						//removing the listeners so they don't interfere and add AlphaSprite ones.
-						DisplayObject(child).removeEventListeners();
+						_childrenListeners[child.name] = DisplayObject(child).removeEventListeners();
 						
 						child.addEventListener(TouchEvent.TOUCH, onTouch);
 						
@@ -464,7 +466,22 @@ package utils
 			
 		}
 		
+		public function activate():void {
 		
+			
+		}
+		
+		
+		
+		public function deactivate():void {
+			
+			for each(var dO:DisplayObject in _displayObjectsArray){
+				
+				dO.addEventListener(_childrenListeners[dO.name]["touch"], _childrenListeners[dO.name]["touch"]); 
+				
+			}
+			
+		}
 		
 		
 		

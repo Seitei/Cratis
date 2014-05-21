@@ -22,12 +22,21 @@ package game
 			 "assets/cruiser_top.png",
 			 "assets/patrol_top.png",
 			 "assets/submarine_top.png",
+			 //fleet
+			 "assets/carrier_fleet.png",
+			 "assets/destroyer_fleet.png",
+			 "assets/battleship_fleet.png",
+			 "assets/cruiser_fleet.png",
+			 "assets/patrol_fleet.png",
+			 "assets/submarine_fleet.png",
 			 //
 			 "assets/attacked_tile.png",
 		     "assets/background.png",
 			 "assets/ship_tiles_counter.png",
 			 "assets/hp_bar_border.png",
 			 "assets/hp_bar_bg.png",
+			 "assets/cost_bar_border.png",
+			 "assets/cost_bar_bg.png",
 			 "assets/attack_bar_border.png",
 			 "assets/attack_bar_bg.png",
 			//done_button

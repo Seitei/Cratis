@@ -16,6 +16,7 @@ package starling.display
     import flash.system.Capabilities;
     import flash.ui.Mouse;
     import flash.ui.MouseCursor;
+    import flash.utils.Dictionary;
     import flash.utils.getQualifiedClassName;
     
     import starling.core.RenderSupport;
@@ -415,9 +416,9 @@ package starling.display
             }
         }
         
-        public override function removeEventListeners(type:String=null):void
+        public override function removeEventListeners(type:String=null):Dictionary
         {
-            super.removeEventListeners(type);
+            return super.removeEventListeners(type);
             
             if (type == null || type == Event.ENTER_FRAME)
             {

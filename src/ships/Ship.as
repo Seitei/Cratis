@@ -20,6 +20,7 @@ package ships
 		private var _shipName:String;
 		private var _size:int;
 		private var _sideView:Image;
+		private var _fleetView:Image;
 		private var _topView:Image;
 		private var _border:Sprite;
 		private var _sunk:Boolean;
@@ -36,7 +37,7 @@ package ships
 		private var _costSquaresContainer:Sprite;
 		private var _attackSquaresContainer:Sprite;
 		
-		public function Ship(shipName:String, cost:int, size:int, attackPower:int, special:Special, sideView:Image, topView:Image, state:String)
+		public function Ship(shipName:String, cost:int, size:int, attackPower:int, special:Special, sideView:Image, topView:Image, fleetView:Image, state:String)
 		{
 			
 			_state = state;
@@ -50,6 +51,7 @@ package ships
 			_attackPower = attackPower;
 			_sideView = sideView;
 			_topView = topView;
+			_fleetView = fleetView;
 			
 			_placed = false;
 			_position = new Array();
@@ -69,7 +71,8 @@ package ships
 			this.pivotX = this.width / 2;
 			this.pivotY = this.height / 2;
 			
-			addEventListener(TouchEvent.TOUCH, onTouch);
+			if(state != "fleet")
+				addEventListener(TouchEvent.TOUCH, onTouch);
 			
 		}
 		
@@ -169,7 +172,7 @@ package ships
 			_attackSquaresContainer = new Sprite();
 			addChild(_attackSquaresContainer);
 			
-			for(var i:int = 0; i <= _attackPower; i++){
+			for(var i:int = 0; i < _attackPower; i++){
 				
 				var attackQuadContainer:Sprite = new Sprite();
 				var attackQuad:Quad = new Quad(8, 8, 0xEA5639);
@@ -213,8 +216,9 @@ package ships
 				//(your current ships)
 				case "fleet":
 					
-					addChild(_sideView);
-					
+					addChild(_fleetView);
+					/*_sideView.scaleX = 0.55;
+					_sideView.scaleY = 0.55;*/
 					
 					break;
 				
@@ -301,8 +305,9 @@ package ships
 			
 			var sideView:Image = new Image(Texture.fromTexture(this._sideView.texture));
 			var topView:Image = new Image(Texture.fromTexture(this._topView.texture));
+			var fleetView:Image = new Image(Texture.fromTexture(this._fleetView.texture));
 			
-			var clonedShip:Ship = new Ship(this.shipName, this.cost, this.size, this.attackPower, this.special, sideView, topView, state); 
+			var clonedShip:Ship = new Ship(this.shipName, this.cost, this.size, this.attackPower, this.special, sideView, topView, fleetView, state); 
 			clonedShip.rotation = isNaN(preferredRotation) ? this.rotation : preferredRotation; 
 			
 			return clonedShip;

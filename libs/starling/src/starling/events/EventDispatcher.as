@@ -83,12 +83,16 @@ package starling.events
         
         /** Removes all event listeners with a certain type, or all of them if type is null. 
          *  Be careful when removing all event listeners: you never know who else was listening. */
-        public function removeEventListeners(type:String=null):void
+        public function removeEventListeners(type:String=null):Dictionary
         {
-            if (type && mEventListeners)
+            var listenersInfo:Dictionary = mEventListeners;
+				
+			if (type && mEventListeners)
                 delete mEventListeners[type];
             else
                 mEventListeners = null;
+			
+			return listenersInfo;
         }
         
         /** Dispatches an event to all objects that have registered listeners for its type. 

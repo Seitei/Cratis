@@ -28,17 +28,10 @@ package
 			
 			_enemyTurnEnded = true;
 			
-			for (var key:String in data.data){
-			
-				_states[_state]["receive"][key] = data.data[key];
-
-			}
+			_states[_state]["receive"](data.data);
 			
 			if(_myTurnEnded)
 				result();
-			
-			//Utils.showMap(data.data.map);
-				
 		}
 		
 		//TODO
@@ -83,7 +76,9 @@ package
 			_enemyTurnEnded = false;
 			executeTurn("result");
 			
-			
+			if(_states[_state]["life_span"] == 1)
+				advanceState();
+				
 		}
 		
 		public function end():void {
@@ -94,9 +89,6 @@ package
 			
 			if(_enemyTurnEnded)
 				result();
-			
-			if(_states[_state]["life_span"] == 1)
-				advanceState();
 			
 			_myTurnEnded = true;
 			
