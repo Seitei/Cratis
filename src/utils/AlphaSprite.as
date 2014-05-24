@@ -46,6 +46,7 @@ package utils
 		private var _movingWithKeyboard:Boolean;
 		private var _alphaMode:Boolean = false;
 		private var _childrenListeners:Dictionary;
+		private var _scanCompleted:Boolean = false;
 		
 		public function AlphaSprite()
 		{
@@ -74,29 +75,46 @@ package utils
 					if(_sharedObject.data[child.name]) {
 						
 						for ( var property:String in _sharedObject.data[child.name]) {
-							
 							_displayObjectsDic[child.name][property] = _sharedObject.data[child.name][property];
-							
 						}
 					}
-				
-					if(_mode == "write"){
-						
-						//removing the listeners so they don't interfere and add AlphaSprite ones.
-						_childrenListeners[child.name] = DisplayObject(child).removeEventListeners();
-						
-						child.addEventListener(TouchEvent.TOUCH, onTouch);
-						
-					}
+					
 				}
 				
 				if(child is DisplayObjectContainer && child.numChildren > 0){
-						
 					recurseStage(child);
-						
 				}
-				
 			}
+			
+			_scanCompleted = true;
+		}
+		
+		public function addNew(child:*):void {
+			
+			if(!_scanCompleted) return;
+			
+			_displayObjectsDic[child.name] = child;
+			_displayObjectsArray.push(child);
+			
+			if(_sharedObject.data[child.name]) {
+				
+				for ( var property:String in _sharedObject.data[child.name]) {
+					
+					_displayObjectsDic[child.name][property] = _sharedObject.data[child.name][property];
+					
+				}
+			}
+			
+			/*if(child is DisplayObjectContainer && child.numChildren > 0){
+				addNew(child);
+			}*/
+		}
+		
+		public function remove(child:*):void {
+			
+			delete _displayObjectsDic[child.name];
+			_displayObjectsArray.splice(_displayObjectsArray.indexOf(child), 1);
+			
 		}
 		
 		private function onTouch(e:TouchEvent):void {
@@ -191,7 +209,7 @@ package utils
 		
 		private function showAlpha(e:KeyboardEvent):void {
 		
-			if(e.keyCode == Keyboard.CONTROL){
+			if(e.keyCode == Keyboard.A){
 				
 				_alphaMode = !_alphaMode;
 				
@@ -438,48 +456,62 @@ package utils
 			
 			recurseStage(object);
 			
-			if(_mode == "write"){
+			if(_mode == "write") setWriteMode();
+		}
+		
+		private function setWriteMode():void {
+			
+			_doContainer.addEventListener(KeyboardEvent.KEY_DOWN, onMoveObject);
+			_doContainer.addEventListener(KeyboardEvent.KEY_UP, onFinishedMovingObject);
+			_doContainer.addEventListener(KeyboardEvent.KEY_DOWN, showAlpha);
+			
+			_doContainer.addEventListener(TouchEvent.TOUCH, onContainerTouch);
+			
+			_horizontalGuide = new Quad(1, 1, Color.AQUA);
+			_horizontalGuide.visible = false;
+			_doContainer.addChild(_horizontalGuide);
+			
+			_verticalGuide = new Quad(1, 1, Color.AQUA);
+			_verticalGuide.visible = false;
+			_doContainer.addChild(_verticalGuide);	
+			
+			for(var i:int; i < _displayObjectsArray.length; i ++){
 				
-				_doContainer.addEventListener(KeyboardEvent.KEY_DOWN, onMoveObject);
-				_doContainer.addEventListener(KeyboardEvent.KEY_UP, onFinishedMovingObject);
-				_doContainer.addEventListener(KeyboardEvent.KEY_DOWN, showAlpha);
+				_childrenListeners[_displayObjectsArray[i].name] = DisplayObject(_displayObjectsArray[i]).removeEventListeners();
+				_displayObjectsArray[i].addEventListener(TouchEvent.TOUCH, onTouch);
+				_UIBoxesDic[_displayObjectsArray[i].name] = new UIBox(_displayObjectsArray[i]);
+				_doContainer.addChild(_UIBoxesDic[_displayObjectsArray[i].name]);
 				
-				_doContainer.addEventListener(TouchEvent.TOUCH, onContainerTouch);
+			}
+			
+		}
+		
+		public function changeMode():void {
+			
+			if(_mode == "write")
+				_mode = "read";
+			else
+				_mode = "write";
+			
+			if(_mode == "read"){
 				
-				_horizontalGuide = new Quad(1, 1, Color.AQUA);
-				_horizontalGuide.visible = false;
-				_doContainer.addChild(_horizontalGuide);
-				
-				_verticalGuide = new Quad(1, 1, Color.AQUA);
-				_verticalGuide.visible = false;
-				_doContainer.addChild(_verticalGuide);	
-				
-				for(var i:int; i < _displayObjectsArray.length; i ++){
+				for each(var dO:DisplayObject in _displayObjectsArray){
 					
-					_UIBoxesDic[_displayObjectsArray[i].name] = new UIBox(_displayObjectsArray[i]);
-					_doContainer.addChild(_UIBoxesDic[_displayObjectsArray[i].name]);
-					
+					dO.removeEventListeners();
+					 
+					for(var key:String in _childrenListeners[dO.name]){
+						
+						for each(var foo:Function in _childrenListeners[dO.name][key]){
+							
+							dO.addEventListener(key, foo);
+							
+						}
+					}
 				}
 			}
 			
-			
-			
-		}
-		
-		public function activate():void {
-		
-			
-		}
-		
-		
-		
-		public function deactivate():void {
-			
-			for each(var dO:DisplayObject in _displayObjectsArray){
-				
-				dO.addEventListener(_childrenListeners[dO.name]["touch"], _childrenListeners[dO.name]["touch"]); 
-				
-			}
+			if(_mode == "write")
+				setWriteMode();
 			
 		}
 		

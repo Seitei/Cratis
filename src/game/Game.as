@@ -50,7 +50,7 @@ package game
 		private static const TILE_SIZE:int = 28;
 		private static const MINIMUM_COST_TO_SPEND:int = 10; 
 		private static const AVAILABLE_COST:int = 15;
-		private static const ALPHA_SPRITE_MODE:String = "write";
+		private static const ALPHA_SPRITE_MODE:String = "read";
 		
 		private var _myGrid:Sprite;
 		private var _enemyGrid:Sprite;
@@ -88,6 +88,10 @@ package game
 		private var _phaseMessageContent:Sprite;
 		private var _myFleetCondensed:Array;
 		private var _shipFactory:ShipFactory;
+		private var _myHp:int;
+		private var _enemyHp:int;
+		private var _myAttackPower:int;
+		private var _enemyAttackPower:int;
 		
 		public function Game(player:Player, assetManager:AssetManager)
 		{
@@ -98,6 +102,8 @@ package game
 			_myFleetCondensed = new Array();
 			
 			this.addEventListener("onShipTouch", onShipTouch);
+			this.addEventListener(Event.ADDED, onChildAdded);
+			this.addEventListener(Event.REMOVED, onChildRemoved);
 		}
 		
 		private function onAdded(e:Event):void {
@@ -243,11 +249,15 @@ package game
 			
 			for each(var obj:Object in fleet){
 				
-				_enemyFleet.push(_shipFactory.buildShip(obj.shipName, "fleet", obj.position));
+				var ship:Ship = _shipFactory.buildShip(obj.shipName, "fleet", obj.position);
+				_enemyFleet.push(ship);
 				
+				_enemyHp += ship.size;
+				_enemyAttackPower += ship.attackPower;
 			}
 			
 			_enemyFleet.sortOn("size", [Array.DESCENDING]);
+			
 		}
 		
 		private function displayShips():void {
@@ -568,7 +578,7 @@ package game
 			
 			if(e.keyCode == Keyboard.CONTROL){
 				
-				AlphaSprite.getInstance().deactivate();
+				AlphaSprite.getInstance().changeMode();
 				
 			}
 		}
@@ -588,16 +598,43 @@ package game
 			
 			_enemyHpBar = new Bar(new Image(_assetManager.getTexture("hp_bar_bg")), new Image(_assetManager.getTexture("hp_bar_border")));
 			_enemyHpBar.name = "enemy_hp_bar";
+			_enemyHpBar.x = stage.stageWidth / 2;
 			_enemyHpBar.scaleX = -1;
+			_enemyHpBar.alpha = 0;
 			addChild(_enemyHpBar);
+			
+			var tween:Tween = new Tween(_enemyHpBar, 1, Transitions.LINEAR);
+			tween.animate("alpha", 1);
+			Starling.juggler.add(tween);
 			
 			_enemyAttackBar = new Bar(new Image(_assetManager.getTexture("attack_bar_bg")), new Image(_assetManager.getTexture("attack_bar_border")));
 			_enemyAttackBar.name = "enemy_attack_bar";
+			_enemyAttackBar.x = stage.stageWidth / 2;
 			_enemyAttackBar.scaleX = -1;
 			addChild(_enemyAttackBar);
 			
+			var tween2:Tween = new Tween(_enemyAttackBar, 1, Transitions.LINEAR);
+			tween2.animate("alpha", 1);
+			Starling.juggler.add(tween2);
+			
+			trace(_enemyAttackPower);
+			_enemyAttackBar.increaseUnits(_enemyAttackPower);
+			_enemyHpBar.increaseUnits(_enemyHp);
+			
 		}
 		
+		
+		private function onChildAdded(e:Event):void {
+			
+			if(DisplayObject(e.target).name)
+				AlphaSprite.getInstance().addNew(e.target);
+		}
+		
+		private function onChildRemoved(e:Event):void {
+			
+			if(DisplayObject(e.target).name)
+				AlphaSprite.getInstance().remove(e.target);
+		}
 		
 		private function updateCost(cost:int):void {
 			

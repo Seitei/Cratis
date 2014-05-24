@@ -16,6 +16,7 @@ package utils
 		private var _hpDivisors:Array;
 		private var _divisorsContainer:PixelMaskDisplayObject;
 		private var _units:int;
+		private var _firstValue:Boolean; 
 		
 		public function Bar(background:DisplayObject, border:DisplayObject)
 		{
@@ -49,10 +50,14 @@ package utils
 		
 		public function increaseUnits(value:int):void {
 			
+			if(value == 0) return;
 			
 			_units += value;
 			
-			if(_hpDivisors.length == 0) value --;
+			if(!_firstValue){
+				_firstValue = true;
+				value --;
+			}
 				
 			for(var i:int = 0; i < value; i ++){
 				
