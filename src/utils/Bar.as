@@ -13,7 +13,7 @@ package utils
 		private var _background:DisplayObject;
 		private var _border:DisplayObject;
 		private var _mask:PixelMaskDisplayObject;
-		private var _hpDivisors:Array;
+		private var _divisors:Array;
 		private var _divisorsContainer:PixelMaskDisplayObject;
 		private var _units:int;
 		private var _firstValue:Boolean; 
@@ -23,7 +23,7 @@ package utils
 			addEventListener(Event.ADDED_TO_STAGE, onAdded);
 			_background = background;
 			_border = border;
-			_hpDivisors = new Array();
+			_divisors = new Array();
 		}
 		
 		public function get units():int
@@ -34,6 +34,7 @@ package utils
 		public function set units(value:int):void
 		{
 			_units = value;
+			_mask.mask.x = -this.width + (this.width / (_divisors.length + 1)) * _units;
 		}
 
 		private function onAdded(e:Event):void {
@@ -74,26 +75,38 @@ package utils
 				
 				_divisorsContainer.addChild(container);
 				
-				_hpDivisors.push(container);
+				_divisors.push(container);
 				
 			}
 			
-			for(var j:int = 0; j < _hpDivisors.length; j ++){
+			for(var j:int = 0; j < _divisors.length; j ++){
 				
-				_hpDivisors[j].x = (j + 1) * (this.width / (_hpDivisors.length + 1));
+				_divisors[j].x = (j + 1) * (this.width / (_divisors.length + 1));
 				
 			}
 		}
 		
 		public function update(value:int):void {
 			
-			_mask.mask.x -= (this.width / (_hpDivisors.length + 1)) * value;
+			_mask.mask.x -= (this.width / (_divisors.length + 1)) * value;
 			_units -= value;
+			
 		}
 		
-		
-		
-		
+		public function setValue(value:String):void {
+			
+			
+			switch(value) {
+				
+				case "full": 
+					units = _divisors.length + 1;
+					break;
+				
+				case "empty": 
+					units = 0;
+					break;
+			}
+		}
 	}
 	
 	

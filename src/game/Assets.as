@@ -39,6 +39,8 @@ package game
 			 "assets/cost_bar_bg.png",
 			 "assets/attack_bar_border.png",
 			 "assets/attack_bar_bg.png",
+			 "assets/hit.png",
+			 "assets/water.png",
 			//done_button
 			 "assets/done_button_up.png",
 			 "assets/done_button_disabled.png",

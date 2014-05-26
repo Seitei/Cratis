@@ -108,12 +108,12 @@ package
 
 				if(type.indexOf("method") != -1 && type.indexOf("var_method") == -1){
 					var meParams:Array = action[type].slice(1);				
-					action.method[0].apply(null, meParams);
+					action[type][0].apply(null, meParams);
 				}
 				
 				if(type.indexOf("var_method") != -1){
 					var vmParams:Array = action[type].slice(2);
-					action.var_method[0][action.var_method[1]].apply(null, vmParams);
+					action[type][0][action[type][1]].apply(null, vmParams);
 				}
 				
 			}

@@ -30,6 +30,7 @@ package game
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
 	import starling.events.TouchPhase;
+	import starling.filters.BlurFilter;
 	import starling.text.TextField;
 	import starling.textures.RenderTexture;
 	import starling.textures.Texture;
@@ -92,6 +93,7 @@ package game
 		private var _enemyHp:int;
 		private var _myAttackPower:int;
 		private var _enemyAttackPower:int;
+		private var _hit:Boolean;
 		
 		public function Game(player:Player, assetManager:AssetManager)
 		{
@@ -111,7 +113,6 @@ package game
 			this.addEventListener(KeyboardEvent.KEY_DOWN, onDeactivateAlphaSprite);
 			//background
 			var bgImage:Image = new Image(_assetManager.getTexture("background"));
-			//bgImage.name = "main_background";
 			addChild(bgImage);
 			_phaseMessageContent = new Sprite();
 			_myAttacks = new Array();
@@ -119,28 +120,6 @@ package game
 			_player.turn = new Turns();
 			
 			_attackedTiles = new Array();
-			
-			/*var testObject1:Sprite = new Sprite();
-			
-			var quad1:Quad = new Quad(TILE_SIZE * 2, TILE_SIZE * 2, Color.GRAY);
-			quad1.name = "quad1";
-			testObject1.addChild(quad1); 
-			
-			var quad2:Quad = new Quad(30, 30, Color.BLACK);
-			quad2.name = "quad2";
-			testObject1.addChild(quad2);
-			
-			addChild(testObject1);
-			
-			var testObject2:Sprite = new Sprite();
-			testObject2.addChild( new Quad(TILE_SIZE * 5, TILE_SIZE * 3, Color.RED));
-			testObject2.name = "to2";
-			addChild(testObject2);
-			
-			AlphaSprite.getInstance().init(this, ALPHA_SPRITE_MODE);
-			
-			return;*/
-			
 			
 			buildGrids();
 			initShips();
@@ -221,7 +200,8 @@ package game
 				{
 				 "var_property1": [_enemyGrid, "touchable", true],
 				 "var_method": [_enemyGrid, "addEventListener", TouchEvent.TOUCH, onEnemyGridTouched],
-				 "var_property2": [_doneButton, "enabled", false]
+				 "var_property2": [_doneButton, "enabled", false],
+				 "method": [resetAttackTurn]
 				},
 				//end
 				{
@@ -234,16 +214,29 @@ package game
 					"method": [displayAttacks] 
 				},
 				//send
-				{"attacks": _myAttacks},
+				 _myAttacks,
 				//receive
-				{"attacks": _enemyAttacks},
-				0,
+				 processEnemyAttacks,
+				 0,
 				{"showMessage": showMessage, "phrase": "ATTACK!"}	
 			);
 			
 		}
+	
+	   private function processEnemyAttacks(attacks:Array):void {
+		   
+		   _enemyAttacks = attacks;
+		   
+	   }
 		
-		private function processEnemyFleetCondensed(fleet:Array):void {
+	   private function resetAttackTurn():void {
+		   
+		   _myAttacks = new Array();
+		   _myAttackBar.setValue("full"); 
+		   
+	   }
+	   
+	   private function processEnemyFleetCondensed(fleet:Array):void {
 			
 			//reconstruct enemy fleet
 			
@@ -297,7 +290,41 @@ package game
 			
 		}
 		
+		private function showEnemyBars():void {
+			
+			_enemyHpBar = new Bar(new Image(_assetManager.getTexture("hp_bar_bg")), new Image(_assetManager.getTexture("hp_bar_border")));
+			_enemyHpBar.name = "enemy_hp_bar";
+			_enemyHpBar.x = stage.stageWidth / 2;
+			_enemyHpBar.scaleX = -1;
+			_enemyHpBar.alpha = 0;
+			addChild(_enemyHpBar);
+			
+			var tween:Tween = new Tween(_enemyHpBar, 1, Transitions.LINEAR);
+			tween.animate("alpha", 1);
+			Starling.juggler.add(tween);
+			
+			_enemyAttackBar = new Bar(new Image(_assetManager.getTexture("attack_bar_bg")), new Image(_assetManager.getTexture("attack_bar_border")));
+			_enemyAttackBar.name = "enemy_attack_bar";
+			_enemyAttackBar.x = stage.stageWidth / 2;
+			_enemyAttackBar.scaleX = -1;
+			addChild(_enemyAttackBar);
+			
+			var tween2:Tween = new Tween(_enemyAttackBar, 1, Transitions.LINEAR);
+			tween2.animate("alpha", 1);
+			Starling.juggler.add(tween2);
+			
+			_enemyAttackBar.increaseUnits(_enemyAttackPower);
+			_enemyHpBar.increaseUnits(_enemyHp);
+			
+			tween.onComplete = onTweensComplete;
+			
+		}
 		
+		private function onTweensComplete():void {
+			
+			_player.turn.start();
+			
+		}
 		
 		private function fadeUI():void {
 			
@@ -338,12 +365,75 @@ package game
 		}
 		
 		
-		
-		
 		private function displayAttacks():void {
 			
 			
+			//remove attacked tiles
+			for each(var image:Image in _attackedTiles){
+				var tween:Tween = new Tween(image, 1, Transitions.LINEAR);
+				tween.animate("alpha", 0);
+				Starling.juggler.add(tween);
+				tween.onComplete = onCompleteFadeTransition;
+				tween.onCompleteArgs = [image];
+			}
 			
+			//display your attacks
+			checkIfHit(_myAttacks, _enemyFleet, _enemyGrid, _enemyHpBar);
+			
+			//display enemy attacks
+			checkIfHit(_enemyAttacks, _myFleet, _myGrid, _myHpBar);
+			
+			
+			_player.turn.start();
+			
+		}
+		
+		private function checkIfHit(attacks:Array, fleet:Array, grid:DisplayObjectContainer, bar:Bar):void {
+			
+			var hit:Boolean = false;
+			
+			for each(var point:Point in attacks){
+				
+				hit = false;
+				
+				for each(var ship:Ship in fleet){
+					
+					for each(var posPoint:Point in ship.position){
+						
+						if(point.equals(posPoint)){
+							
+							var hitI:Image = new Image(_assetManager.getTexture("hit"));
+							hitI.x = point.x * TILE_SIZE + 1;
+							hitI.y = point.y * TILE_SIZE + 1;
+							grid.addChild(hitI);
+							hitI.alpha = 0;
+							
+							var tween:Tween = new Tween(hitI, 1, Transitions.LINEAR);
+							tween.animate("alpha", 1);
+							Starling.juggler.add(tween);
+							
+							hit = true;
+							
+							bar.update(1);
+							
+						}
+					}
+				}
+				
+				if(!hit){
+					
+					var water:Image = new Image(_assetManager.getTexture("water"));
+					water.x = point.x * TILE_SIZE + 1;
+					water.y = point.y * TILE_SIZE + 1;
+					grid.addChild(water);
+					water.alpha = 0;
+					
+					var tween2:Tween = new Tween(water, 1, Transitions.LINEAR);
+					tween2.animate("alpha", 1);
+					Starling.juggler.add(tween2);
+					
+				}
+			}
 		}
 		
 		
@@ -388,7 +478,12 @@ package game
 			
 			if(touch.phase == TouchPhase.BEGAN){
 				
-				_myAttacks.push([xP, yP]);	
+				var point:Point = new Point(xP, yP);
+				
+				if(checkIfDuplicatedAttack(point))
+					return;		
+				
+				_myAttacks.push(point);	
 				var attackedTile:Image = new Image(_assetManager.getTexture("attacked_tile"));
 				attackedTile.x = _tile.x + 1;
 				attackedTile.y = _tile.y + 1;
@@ -402,9 +497,18 @@ package game
 					_doneButton.enabled = true;
 				}
 			}
+		}
+		
+		private function checkIfDuplicatedAttack(point:Point):Boolean {
 			
+			for each(var p:Point in _myAttacks){
+				
+				if(p.x == point.x && p.y == point.y)
+					return true;
+				
+			}
 			
-			
+			return false;
 			
 		}
 		
@@ -593,36 +697,6 @@ package game
 			addChild(_costBar);
 			
 		}
-		
-		private function showEnemyBars():void {
-			
-			_enemyHpBar = new Bar(new Image(_assetManager.getTexture("hp_bar_bg")), new Image(_assetManager.getTexture("hp_bar_border")));
-			_enemyHpBar.name = "enemy_hp_bar";
-			_enemyHpBar.x = stage.stageWidth / 2;
-			_enemyHpBar.scaleX = -1;
-			_enemyHpBar.alpha = 0;
-			addChild(_enemyHpBar);
-			
-			var tween:Tween = new Tween(_enemyHpBar, 1, Transitions.LINEAR);
-			tween.animate("alpha", 1);
-			Starling.juggler.add(tween);
-			
-			_enemyAttackBar = new Bar(new Image(_assetManager.getTexture("attack_bar_bg")), new Image(_assetManager.getTexture("attack_bar_border")));
-			_enemyAttackBar.name = "enemy_attack_bar";
-			_enemyAttackBar.x = stage.stageWidth / 2;
-			_enemyAttackBar.scaleX = -1;
-			addChild(_enemyAttackBar);
-			
-			var tween2:Tween = new Tween(_enemyAttackBar, 1, Transitions.LINEAR);
-			tween2.animate("alpha", 1);
-			Starling.juggler.add(tween2);
-			
-			trace(_enemyAttackPower);
-			_enemyAttackBar.increaseUnits(_enemyAttackPower);
-			_enemyHpBar.increaseUnits(_enemyHp);
-			
-		}
-		
 		
 		private function onChildAdded(e:Event):void {
 			
