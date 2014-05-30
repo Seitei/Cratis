@@ -17,6 +17,7 @@ package
 		private var _stateNames:Array;
 		private var _enemyTurnEnded:Boolean;
 		private var _myTurnEnded:Boolean;
+		private var _phaseChangeMessageShown:Boolean;
 		
 		public function Turns() 
 		{
@@ -76,23 +77,22 @@ package
 			_enemyTurnEnded = false;
 			executeTurn("result");
 			
-			if(_states[_state]["life_span"] == 1)
+			if(_states[_state]["life_span"] == 1){
+				_phaseChangeMessageShown = false;
 				advanceState();
+			}
 				
 		}
 		
 		public function end():void {
 			
 			executeTurn("end");
+			_myTurnEnded = true;
 			
 			dispatchEventWith("sendData", false, _states[_state]["send"]);
 			
 			if(_enemyTurnEnded)
 				result();
-			
-			_myTurnEnded = true;
-			
-			
 			
 		}
 		
@@ -118,8 +118,11 @@ package
 				
 			}
 			
-			if(_states[_state]["phaseChangeMessage"] && phase == "start")
+			if(_states[_state]["phaseChangeMessage"] && phase == "start" && _phaseChangeMessageShown == false){
 				_states[_state]["phaseChangeMessage"].showMessage(_states[_state]["phaseChangeMessage"].phrase);
+				_phaseChangeMessageShown = true;				
+			}
+			
 			
 		}
 		

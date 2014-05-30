@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<root>
+  <do>
+	<name>"carrier"</name>
+	<properties>
+	  <x>2.5</x>	
+	  <y>5</y>
+	</properties>
+  </do>
+
+
+</root>

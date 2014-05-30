@@ -51,7 +51,9 @@ package game
 		private static const TILE_SIZE:int = 28;
 		private static const MINIMUM_COST_TO_SPEND:int = 10; 
 		private static const AVAILABLE_COST:int = 15;
-		private static const ALPHA_SPRITE_MODE:String = "read";
+		
+		//WRITE //READ //PRODUCTION
+		private static const ALPHA_SPRITE_MODE:String = "production";
 		
 		private var _myGrid:Sprite;
 		private var _enemyGrid:Sprite;
@@ -231,7 +233,7 @@ package game
 		
 	   private function resetAttackTurn():void {
 		   
-		   _myAttacks = new Array();
+		   _myAttacks.splice(0);
 		   _myAttackBar.setValue("full"); 
 		   
 	   }
@@ -572,6 +574,7 @@ package game
 			
 			_myFleet.splice(_myFleet.indexOf(ship), 1);
 			_myGrid.removeChild(ship, true);
+			
 		}
 		
 		private function onShipTouch(e:Event, data:Object):void {

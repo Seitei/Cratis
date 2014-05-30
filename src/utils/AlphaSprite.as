@@ -1,12 +1,18 @@
 package utils
 {
 	import flash.display3D.IndexBuffer3D;
+	import flash.events.Event;
 	import flash.filters.DisplacementMapFilter;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
+	import flash.net.FileReference;
 	import flash.net.SharedObject;
+	import flash.net.URLLoader;
+	import flash.net.URLRequest;
 	import flash.ui.Keyboard;
+	import flash.utils.ByteArray;
 	import flash.utils.Dictionary;
+	import flash.xml.XMLNode;
 	
 	import starling.core.Starling;
 	import starling.display.DisplayObject;
@@ -26,7 +32,6 @@ package utils
 		private static var THRESHOLD:int = 3;
 		private var _displayObjectsDic:Dictionary;
 		private var _UIBoxesDic:Dictionary;
-		private var _data:XML;
 		private var _sharedObject:SharedObject;
 		private var _doContainer:DisplayObjectContainer;
 		private var _displayObjectsArray:Array;
@@ -47,6 +52,7 @@ package utils
 		private var _alphaMode:Boolean = false;
 		private var _childrenListeners:Dictionary;
 		private var _scanCompleted:Boolean = false;
+		private var _data:XML;
 		
 		public function AlphaSprite()
 		{
@@ -71,14 +77,12 @@ package utils
 					_displayObjectsDic[child.name] = child;
 					_displayObjectsArray.push(child);
 					
-					//if the object exists in the shared objects, assign properties
-					if(_sharedObject.data[child.name]) {
-						
-						for ( var property:String in _sharedObject.data[child.name]) {
-							_displayObjectsDic[child.name][property] = _sharedObject.data[child.name][property];
-						}
-					}
+					if(_mode == "production") continue;
 					
+					if(_sharedObject.data[child.name]) {
+						for ( var property:String in _sharedObject.data[child.name]) 
+							_displayObjectsDic[child.name][property] = _sharedObject.data[child.name][property];
+					}
 				}
 				
 				if(child is DisplayObjectContainer && child.numChildren > 0){
@@ -88,6 +92,32 @@ package utils
 			
 			_scanCompleted = true;
 		}
+		
+		private function processData(e:Event):void {
+			
+			_data = new XML(e.target.data);
+			
+			for each(var node:XML in _data.dO){
+				
+				if(_displayObjectsDic[node.name.toString()]){
+					
+					for each(var properties:XML in node.properties){
+						
+						for each(var itemData:XML in properties.elements()) 
+						{
+							_displayObjectsDic[node.name.toString()][itemData.localName()] = itemData.toString();
+						}
+						
+					}
+					
+				}
+				
+			}
+			
+			
+		}
+		
+		
 		
 		public function addNew(child:*):void {
 			
@@ -187,9 +217,43 @@ package utils
 		
 		private function saveData():void {
 			
-			_sharedObject.close();	
 			_sharedObject.data[_selectedDo.name] = {"x": _selectedDo.x, "y": _selectedDo.y};
 			_sharedObject.flush();
+			_sharedObject.close();
+		}
+		
+		private function writeXML(e:KeyboardEvent):void {
+			
+			var data:XML = <root></root>;
+			
+			if(e.keyCode == Keyboard.ENTER){
+				for(var obj:Object in _sharedObject.data){
+					
+					var dO:XML = <dO></dO>; 
+					dO.name = obj;
+					dO.properties = <properties></properties>;
+					
+					for ( var property:String in _sharedObject.data[obj]) {
+					
+						dO.properties[property] =  _sharedObject.data[obj][property];
+							
+						trace(property);
+						trace(_sharedObject.data[obj][property]);
+					}
+					
+					data.dO = dO;	
+				}
+			}
+			
+			var ba:ByteArray = new ByteArray();
+			ba.writeUTFBytes(data);
+			
+			var fr:FileReference = new FileReference();
+			
+			fr.save(ba, "data.xml");
+			
+			
+			
 		}
 		
 		private function onFinishedMovingObject(e:KeyboardEvent):void {
@@ -449,12 +513,21 @@ package utils
 		}
 			
 		
+		
+		
 		public function init(object:DisplayObjectContainer, mode:String):void {
 			
 			_mode = mode;
 			_doContainer = object;
+			_doContainer.addEventListener(KeyboardEvent.KEY_UP, writeXML);
 			
 			recurseStage(object);
+			
+			if(_mode == "production"){
+				var myLoader:URLLoader = new URLLoader();
+				myLoader.load(new URLRequest("data.xml"));
+				myLoader.addEventListener(Event.COMPLETE, processData);
+			}
 			
 			if(_mode == "write") setWriteMode();
 		}
