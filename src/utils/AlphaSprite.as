@@ -107,14 +107,9 @@ package utils
 						{
 							_displayObjectsDic[node.name.toString()][itemData.localName()] = itemData.toString();
 						}
-						
 					}
-					
 				}
-				
 			}
-			
-			
 		}
 		
 		
@@ -126,12 +121,31 @@ package utils
 			_displayObjectsDic[child.name] = child;
 			_displayObjectsArray.push(child);
 			
-			if(_sharedObject.data[child.name]) {
+			if(_mode == "production"){
 				
-				for ( var property:String in _sharedObject.data[child.name]) {
+				for each(var node:XML in _data.dO){
 					
-					_displayObjectsDic[child.name][property] = _sharedObject.data[child.name][property];
+					if(_displayObjectsDic[node.name.toString()]){
+						
+						for each(var properties:XML in node.properties){
+							
+							for each(var itemData:XML in properties.elements()) 
+							{
+								_displayObjectsDic[node.name.toString()][itemData.localName()] = itemData.toString();
+							}
+						}
+					}
+				}
+				
+			}
+			else{
+				if(_sharedObject.data[child.name]) {
 					
+					for ( var property:String in _sharedObject.data[child.name]) {
+						
+						_displayObjectsDic[child.name][property] = _sharedObject.data[child.name][property];
+						
+					}
 				}
 			}
 			
