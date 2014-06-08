@@ -1,7 +1,13 @@
 package utils
 {
+	import starling.animation.Transitions;
+	import starling.animation.Tween;
+	import starling.core.Starling;
+	import starling.display.DisplayObject;
+
 	public class Utils
 	{
+		
 		//debugging purposes
 		public static function showMap(map:Array):void {
 			
@@ -16,5 +22,25 @@ package utils
 			
 			trace(output);
 		}
+		
+		public static function fadeTo(dO:DisplayObject, transitionTime:Number, transitionType:String, fade:Number = 0):void {
+			
+			var tween:Tween = new Tween(dO, 1, transitionType);
+			tween.animate("alpha", fade);
+			Starling.juggler.add(tween);
+			
+			if(fade == 0){
+				tween.onComplete = onCompleteFadeTransition;
+				tween.onCompleteArgs = [dO];
+			}
+			
+		}
+		
+		private static function onCompleteFadeTransition(dO:DisplayObject):void {
+			
+			dO.parent.removeChild(dO, true);
+			
+		}
+		
 	}
 }

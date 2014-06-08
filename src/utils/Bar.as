@@ -17,6 +17,7 @@ package utils
 		private var _divisorsContainer:PixelMaskDisplayObject;
 		private var _units:int;
 		private var _firstValue:Boolean; 
+		private var _maxUnits:int;
 		
 		public function Bar(background:DisplayObject, border:DisplayObject)
 		{
@@ -26,6 +27,16 @@ package utils
 			_divisors = new Array();
 		}
 		
+		public function get maxUnits():int
+		{
+			return _maxUnits;
+		}
+
+		public function set maxUnits(value:int):void
+		{
+			_maxUnits = value;
+		}
+
 		public function get units():int
 		{
 			return _units;
@@ -54,6 +65,7 @@ package utils
 			if(value == 0) return;
 			
 			_units += value;
+			_maxUnits = _units;
 			
 			if(!_firstValue){
 				_firstValue = true;
@@ -99,7 +111,7 @@ package utils
 			switch(value) {
 				
 				case "full": 
-					units = _divisors.length + 1;
+					units = _maxUnits;
 					break;
 				
 				case "empty": 

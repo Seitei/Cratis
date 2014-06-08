@@ -112,8 +112,8 @@ package netcode
 		private function onCirrusConnect():void {
 			//connecting to amfphp
 			_amfphpNc = new NetConnection();
-			//_amfphpNc.connect("http://localhost/Amfphp/");
-			_amfphpNc.connect("http://www.konkugames.com/Amfphp/");
+			_amfphpNc.connect("http://localhost/Amfphp/");
+			//_amfphpNc.connect("http://www.konkugames.com/Amfphp/");
 			_res = new Responder(onResult, onFault);
 			_amfphpNc.call("Rendezvous.match", _res, NAME, _cirrusNc.nearID);
 			

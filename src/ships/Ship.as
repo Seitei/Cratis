@@ -36,6 +36,9 @@ package ships
 		private var _sizeBoxesContainer:Sprite;
 		private var _costSquaresContainer:Sprite;
 		private var _attackSquaresContainer:Sprite;
+		private var _id:String;
+		private var _shipFactory:ShipFactory;
+		private var _owner:String;
 		
 		public function Ship(shipName:String, cost:int, size:int, attackPower:int, special:Special, sideView:Image, topView:Image, fleetView:Image, state:String)
 		{
@@ -63,11 +66,6 @@ package ships
 			
 			createState(_state);
 			
-			_border = Border.createBorder(this.width, this.height, Color.WHITE, 1.5);
-			_border.alpha = 1;
-			addChild(_border);
-			_border.visible = false;
-			
 			this.pivotX = this.width / 2;
 			this.pivotY = this.height / 2;
 			
@@ -76,6 +74,26 @@ package ships
 			
 		}
 		
+		public function get owner():String
+		{
+			return _owner;
+		}
+
+		public function set owner(value:String):void
+		{
+			_owner = value;
+		}
+
+		public function get id():String
+		{
+			return _id;
+		}
+
+		public function set id(value:String):void
+		{
+			_id = value;
+		}
+
 		private function onTouch(e:TouchEvent):void {
 			
 			var endedTouch:Touch = e.getTouch(this, TouchPhase.ENDED); 
@@ -117,6 +135,18 @@ package ships
 				dispatchEventWith("onShipTouch", true, {"touchedShip": this, "shipToPlace": shipToPlace, "action": action});
 				
 			}
+		}
+		
+		public function receiveDamage(value:int):void {
+			
+			_damage += value;
+			
+			if(_damage == _size){
+				_sunk = true;
+				dispatchEventWith("onShipSunk", true, this);
+			}
+			
+			
 		}
 		
 		private function createSizeBoxes(size:int):void {
@@ -203,6 +233,10 @@ package ships
 					_shipNameTxt.hAlign = HAlign.LEFT;
 					_shipNameTxt.y = - _shipNameTxt.height;
 					
+					_border = Border.createBorder(this.width, _tileSize + 1, Color.WHITE, 1.5);
+					addChild(_border);
+					_border.visible = false;
+					
 					addChild(_shipNameTxt);
 						
 					break;
@@ -211,14 +245,21 @@ package ships
 				case "placed":
 					
 					addChild(_topView);
+					
+					_border = Border.createBorder(this.width, this.height, Color.WHITE, 1.5);
+					addChild(_border);
+					_border.visible = false;
+					
 					break;
 				
 				//(your current ships)
 				case "fleet":
 					
 					addChild(_fleetView);
-					/*_sideView.scaleX = 0.55;
-					_sideView.scaleY = 0.55;*/
+				
+					_border = Border.createBorder(this.width, this.height, Color.WHITE, 1.5);
+					addChild(_border);
+					_border.visible = false;
 					
 					break;
 				
@@ -303,12 +344,10 @@ package ships
 
 		public function clone(state:String, preferredRotation:Number = NaN):Ship {
 			
-			var sideView:Image = new Image(Texture.fromTexture(this._sideView.texture));
-			var topView:Image = new Image(Texture.fromTexture(this._topView.texture));
-			var fleetView:Image = new Image(Texture.fromTexture(this._fleetView.texture));
+			_shipFactory = ShipFactory.getInstance();
 			
-			var clonedShip:Ship = new Ship(this.shipName, this.cost, this.size, this.attackPower, this.special, sideView, topView, fleetView, state); 
-			clonedShip.rotation = isNaN(preferredRotation) ? this.rotation : preferredRotation; 
+			var clonedShip:Ship = _shipFactory.buildShip(this.shipName, state, null);
+			clonedShip.rotation = isNaN(preferredRotation) ? this.rotation : preferredRotation;
 			
 			return clonedShip;
 		}

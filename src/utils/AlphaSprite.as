@@ -194,17 +194,13 @@ package utils
 				_deltaX = movedTouch.getMovement(displayObject).x;
 				_deltaY = movedTouch.getMovement(displayObject).y;
 				
-				if(!_snappedX){
-					displayObject.x = movedTouch.getLocation(displayObject.parent).x - _shiftTouch.x;
-					//_UIBoxesDic[displayObject.name].x = movedTouch.globalX - _shiftTouch.x;
-					_UIBoxesDic[displayObject.name].updateUI();
-				}
+				if(!_snappedX)
+					displayObject.x = movedTouch.getLocation(displayObject.parent).x - _shiftTouch.x + displayObject.pivotX;
 				
-				if(!_snappedY){
-					displayObject.y = movedTouch.getLocation(displayObject.parent).y - _shiftTouch.y;
-					//_UIBoxesDic[displayObject.name].y = movedTouch.globalY - _shiftTouch.y;
-					_UIBoxesDic[displayObject.name].updateUI();
-				}
+				if(!_snappedY)
+					displayObject.y = movedTouch.getLocation(displayObject.parent).y - _shiftTouch.y + displayObject.pivotY;
+				
+				if(!_snappedX || !_snappedY) _UIBoxesDic[displayObject.name].updateUI();
 				
 				snap(checkSnap(displayObject), _deltaX, _deltaY);
 				
@@ -238,9 +234,10 @@ package utils
 		
 		private function writeXML(e:KeyboardEvent):void {
 			
-			var data:XML = <root></root>;
-			
 			if(e.keyCode == Keyboard.ENTER){
+				
+				var data:XML = <root></root>;
+				
 				for(var obj:Object in _sharedObject.data){
 					
 					var dO:XML = <dO></dO>; 
@@ -248,26 +245,21 @@ package utils
 					dO.properties = <properties></properties>;
 					
 					for ( var property:String in _sharedObject.data[obj]) {
-					
+						
 						dO.properties[property] =  _sharedObject.data[obj][property];
-							
-						trace(property);
-						trace(_sharedObject.data[obj][property]);
+						
 					}
 					
 					data.dO = dO;	
 				}
+				
+				var ba:ByteArray = new ByteArray();
+				ba.writeUTFBytes(data);
+				
+				var fr:FileReference = new FileReference();
+				
+				fr.save(ba, "data.xml");
 			}
-			
-			var ba:ByteArray = new ByteArray();
-			ba.writeUTFBytes(data);
-			
-			var fr:FileReference = new FileReference();
-			
-			fr.save(ba, "data.xml");
-			
-			
-			
 		}
 		
 		private function onFinishedMovingObject(e:KeyboardEvent):void {

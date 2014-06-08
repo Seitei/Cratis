@@ -25,6 +25,7 @@ package utils
 		private var _rotationAnchor:Quad;
 		private var _selectedDo:DisplayObject;
 		private var _type:String = "beta";
+		private var _needsUpdate:Boolean = true;
 		
 		public function UIBox(displayObject:DisplayObject)
 		{
@@ -61,14 +62,19 @@ package utils
 			this.y = sDORect.top;//_selectedDo.localToGlobal(new Point()).y;
 			
 			createAnchors();
+			
+			_needsUpdate = false;
 		}
 		
 		public function highlight(value:Boolean):void {
 			
-			if(value)
+			if(value && _needsUpdate)
 				updateUI();
 			
 			_highlightBox.visible = value;
+			
+			if(!value)
+				_needsUpdate = true;
 			
 		}
 		
@@ -82,17 +88,18 @@ package utils
 		private function createAnchors():void {
 			
 			_anchorsArray = new Array();
+			_selectionBox.removeChildren(0, -1, true);
 			
 			var color:uint = _type == "alpha" ? Color.RED : Color.AQUA;
 			
-			_anchorsArray[1] = _topLeftAnchor = new Quad(anchorSize, anchorSize,color);  _topLeftAnchor.name = "topLeft";
-			_anchorsArray[2] = _topMidAnchor = new Quad(anchorSize, anchorSize, color);   _topMidAnchor.name = "topMid";
-			_anchorsArray[3] = _topRightAnchor = new Quad(anchorSize, anchorSize, color); _topRightAnchor.name = "topRight";
-			_anchorsArray[4] = _midLeftAnchor = new Quad(anchorSize, anchorSize, color);  _midLeftAnchor.name = "midLeft";
-			_anchorsArray[6] = _midRightAnchor = new Quad(anchorSize, anchorSize, color); _midRightAnchor.name = "midRight";
-			_anchorsArray[7] = _botLeftAnchor = new Quad(anchorSize, anchorSize, color);  _botLeftAnchor.name = "botLeft";
-			_anchorsArray[8] = _botMidAnchor = new Quad(anchorSize, anchorSize, color);   _botMidAnchor.name = "botMid";
-			_anchorsArray[9] = _botRightAnchor = new Quad(anchorSize, anchorSize, color); _botRightAnchor.name = "botRight";
+			_anchorsArray[1] = _topLeftAnchor = new Quad(anchorSize, anchorSize,color); 
+			_anchorsArray[2] = _topMidAnchor = new Quad(anchorSize, anchorSize, color); 
+			_anchorsArray[3] = _topRightAnchor = new Quad(anchorSize, anchorSize, color);
+			_anchorsArray[4] = _midLeftAnchor = new Quad(anchorSize, anchorSize, color); 
+			_anchorsArray[6] = _midRightAnchor = new Quad(anchorSize, anchorSize, color);
+			_anchorsArray[7] = _botLeftAnchor = new Quad(anchorSize, anchorSize, color); 
+			_anchorsArray[8] = _botMidAnchor = new Quad(anchorSize, anchorSize, color);  
+			_anchorsArray[9] = _botRightAnchor = new Quad(anchorSize, anchorSize, color);
 			_rotationAnchor = new Quad(6, 6, color);
 			
 			var xCounter:Number = 0;
@@ -141,6 +148,7 @@ package utils
 			//we need to recalculate the pivot since we are altering the image.
 			this.pivotX = this.width / 2;
 			this.pivotY = this.height / 2;*/
+			
 		}
 	}
 	

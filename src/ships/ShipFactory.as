@@ -17,6 +17,7 @@ package ships
 		private var _counter:int = 0;
 		private var _playerName:String;
 		private var _stats:Dictionary;
+		private var _shipCounter:int;
 		
 		public function ShipFactory():void
 		{
@@ -26,7 +27,7 @@ package ships
 			_stats["battleship"] = [4, 4, 3];
 			_stats["destroyer"]  = [3, 3, 1];
 			_stats["patrol"]     = [2, 2, 0];
-			_stats["submarine"]  = [2, 3, 1];
+			_stats["submarine"]  = [2, 3, 3];
 			_stats["cruiser"]    = [2, 3, 1];
 				
 		}
@@ -56,8 +57,12 @@ package ships
 				new Image(_assetManager.getTexture(shipName + "_fleet")),
 				state);
 				
-			ship.position = position;
+			if(position) ship.position = position;
 			
+			//auto id
+			ship.id = shipName + _shipCounter.toString();
+			
+			_shipCounter ++;
 			return ship;	
 		}
 		

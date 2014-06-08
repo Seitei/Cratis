@@ -49,11 +49,12 @@ package game
 		
 		private static const TILES:int = 10;
 		private static const TILE_SIZE:int = 28;
-		private static const MINIMUM_COST_TO_SPEND:int = 10; 
+		private static const MINIMUM_COST_TO_SPEND:int = 12; 
 		private static const AVAILABLE_COST:int = 15;
 		
 		//WRITE //READ //PRODUCTION
-		private static const ALPHA_SPRITE_MODE:String = "production";
+		//private static const ALPHA_SPRITE_MODE:String = "production";
+		private static const ALPHA_SPRITE_MODE:String = "read";
 		
 		private var _myGrid:Sprite;
 		private var _enemyGrid:Sprite;
@@ -73,6 +74,8 @@ package game
 		private var _prevShipTilesPositionY:int;
 		private var _canPlaceShip:Boolean;
 		private var _myFleet:Array;
+		private var _myRoster:Array;
+		private var _enemyRoster:Array;
 		private var _spent:int;
 		private var _doneButton:ExtendedButton;
 		private var _fleetRoster:Array;
@@ -96,6 +99,10 @@ package game
 		private var _myAttackPower:int;
 		private var _enemyAttackPower:int;
 		private var _hit:Boolean;
+		private var _myHitTiles:Array;
+		private var _enemyHitTiles:Array;
+		private var _myWaterTiles:Array; 
+		private var _enemyWaterTiles:Array;
 		
 		public function Game(player:Player, assetManager:AssetManager)
 		{
@@ -106,8 +113,16 @@ package game
 			_myFleetCondensed = new Array();
 			
 			this.addEventListener("onShipTouch", onShipTouch);
+			this.addEventListener("onShipSunk", onShipSunk);
 			this.addEventListener(Event.ADDED, onChildAdded);
 			this.addEventListener(Event.REMOVED, onChildRemoved);
+			
+			_myRoster = new Array();
+			_enemyRoster = new Array();
+			_myHitTiles = new Array();
+			_myWaterTiles = new Array();
+			_enemyHitTiles = new Array();
+			_enemyWaterTiles = new Array();
 		}
 		
 		private function onAdded(e:Event):void {
@@ -118,6 +133,7 @@ package game
 			addChild(bgImage);
 			_phaseMessageContent = new Sprite();
 			_myAttacks = new Array();
+			_enemyAttacks = new Array();
 			
 			_player.turn = new Turns();
 			
@@ -236,6 +252,9 @@ package game
 		   _myAttacks.splice(0);
 		   _myAttackBar.setValue("full"); 
 		   
+		   _enemyAttacks.splice(0);
+		   _enemyAttackBar.setValue("full");
+		   
 	   }
 	   
 	   private function processEnemyFleetCondensed(fleet:Array):void {
@@ -244,9 +263,21 @@ package game
 			
 			for each(var obj:Object in fleet){
 				
-				var ship:Ship = _shipFactory.buildShip(obj.shipName, "fleet", obj.position);
+				var ship:Ship = _shipFactory.buildShip(obj.shipName, "placed", obj.position);
 				_enemyFleet.push(ship);
 				
+				ship.rotation = obj.position[0].x == obj.position[1].x ? Math.PI/2 : 0;  
+				ship.alpha = 0;
+				ship.touchable = false;
+				
+				ship.x = obj.position[0].x * TILE_SIZE;
+				ship.y = obj.position[0].y * TILE_SIZE;
+				
+				ship.x += ship.rotation ? ship.pivotY : ship.pivotX;
+				ship.y += ship.rotation ? ship.pivotX : ship.pivotY;
+				
+				_enemyGrid.addChild(ship);
+					
 				_enemyHp += ship.size;
 				_enemyAttackPower += ship.attackPower;
 			}
@@ -272,6 +303,9 @@ package game
 				tween.animate("x", 10 + clonedShip.pivotX);
 				Starling.juggler.add(tween);
 				
+				clonedShip.id = _myFleet[i].id;
+				_myRoster.push(clonedShip);
+				
 			}
 			
 			for (var j:int = 0; j < _enemyFleet.length; j++){
@@ -285,6 +319,9 @@ package game
 				tween2.animate("x", clonedShip2.x - clonedShip2.pivotX - 80);
 				clonedShip2.scaleX = -1;
 				Starling.juggler.add(tween2);
+				
+				clonedShip2.id = _enemyFleet[j].id;
+				_enemyRoster.push(clonedShip2);
 				
 			}
 			
@@ -331,19 +368,10 @@ package game
 		private function fadeUI():void {
 			
 			for each(var ship:Ship in _fleetRoster){
-				
-				var tween:Tween = new Tween(ship, 1, Transitions.LINEAR);
-				tween.animate("alpha", 0);
-				Starling.juggler.add(tween);
-				tween.onComplete = onCompleteFadeTransition;
-				tween.onCompleteArgs = [ship];
+				Utils.fadeTo(ship, 1, Transitions.LINEAR);
 			}
 			
-			var tween2:Tween = new Tween(_costBar, 1, Transitions.LINEAR);
-			tween2.animate("alpha", 0);
-			Starling.juggler.add(tween2);
-			tween2.onComplete = onCompleteFadeTransition;
-			tween2.onCompleteArgs = [_costBar];
+			Utils.fadeTo(_costBar, 1, Transitions.LINEAR);
 			
 			var bQuad:Quad = new Quad(1, 190, Color.BLACK);
 			bQuad.alpha = 0.2;
@@ -361,36 +389,31 @@ package game
 			
 		}
 		
-		private function onCompleteFadeTransition(dO:DisplayObject):void {
-			
-			removeChild(dO, true);
-		}
-		
-		
 		private function displayAttacks():void {
 			
-			
 			//remove attacked tiles
+			var deleteArray:Array = new Array();
+			
 			for each(var image:Image in _attackedTiles){
-				var tween:Tween = new Tween(image, 1, Transitions.LINEAR);
-				tween.animate("alpha", 0);
-				Starling.juggler.add(tween);
-				tween.onComplete = onCompleteFadeTransition;
-				tween.onCompleteArgs = [image];
+				Utils.fadeTo(image, 1, Transitions.LINEAR);
+				deleteArray.push(image);
 			}
 			
+			for each(var attackedTile:Image in deleteArray) 
+				_attackedTiles.splice(_attackedTiles.indexOf(attackedTile), 1);
+			
 			//display your attacks
-			checkIfHit(_myAttacks, _enemyFleet, _enemyGrid, _enemyHpBar);
+			checkIfHit(_myAttacks, _enemyFleet, _enemyGrid, _enemyHpBar, _myHitTiles, _myWaterTiles);
 			
 			//display enemy attacks
-			checkIfHit(_enemyAttacks, _myFleet, _myGrid, _myHpBar);
+			checkIfHit(_enemyAttacks, _myFleet, _myGrid, _myHpBar, _enemyHitTiles, _enemyWaterTiles);
 			
 			
 			_player.turn.start();
 			
 		}
 		
-		private function checkIfHit(attacks:Array, fleet:Array, grid:DisplayObjectContainer, bar:Bar):void {
+		private function checkIfHit(attacks:Array, fleet:Array, grid:DisplayObjectContainer, bar:Bar, hitTiles:Array, waterTiles:Array):void {
 			
 			var hit:Boolean = false;
 			
@@ -409,7 +432,8 @@ package game
 							hitI.y = point.y * TILE_SIZE + 1;
 							grid.addChild(hitI);
 							hitI.alpha = 0;
-							
+							hitTiles.push(hitI);
+								
 							var tween:Tween = new Tween(hitI, 1, Transitions.LINEAR);
 							tween.animate("alpha", 1);
 							Starling.juggler.add(tween);
@@ -418,6 +442,9 @@ package game
 							
 							bar.update(1);
 							
+							ship.receiveDamage(1);
+							
+							break;
 						}
 					}
 				}
@@ -429,6 +456,7 @@ package game
 					water.y = point.y * TILE_SIZE + 1;
 					grid.addChild(water);
 					water.alpha = 0;
+					waterTiles.push(water);
 					
 					var tween2:Tween = new Tween(water, 1, Transitions.LINEAR);
 					tween2.animate("alpha", 1);
@@ -436,6 +464,89 @@ package game
 					
 				}
 			}
+		}
+		
+		private function onShipSunk(e:Event, ship:Ship):void {
+			
+			var myShip:Boolean = false;
+			var deleteArray:Array = new Array();
+			
+			if(_myFleet.indexOf(ship) != -1)
+				myShip = true;
+				
+			for each(var posPoint:Point in ship.position){
+				
+				for each(var hitT:Image in myShip ? _enemyHitTiles : _myHitTiles){
+					
+					if(new Point(Math.round(hitT.x / TILE_SIZE), Math.round(hitT.y / TILE_SIZE)).equals(posPoint)){
+						
+						Utils.fadeTo(hitT, 1, Transitions.LINEAR);
+						deleteArray.push(hitT);	
+						continue;
+						
+					}
+				}
+			}
+			
+			for each(var tileI:Image in deleteArray){
+				_enemyHitTiles.splice(_enemyHitTiles.indexOf(tileI), 1);
+			}
+				
+			for each(var shipSunk:Ship in myShip ? _myRoster : _enemyRoster){
+				
+				if(shipSunk.id == ship.id){
+					Utils.fadeTo(shipSunk, 1, Transitions.LINEAR, 0.2);
+					eraseShip(ship, myShip, true);
+					break;
+				}
+			}
+			
+			if(myShip)
+				_myAttackBar.maxUnits = _myAttackBar.maxUnits - ship.attackPower;
+			else
+				_enemyAttackBar.maxUnits = _enemyAttackBar.maxUnits - ship.attackPower;
+			
+		}
+		
+		private function eraseShip(ship:Ship, myShip:Boolean, fade:Boolean = false):void {
+			
+			//var map:Array = myShip ? _myMap : _enemyMap; 
+			var fleet:Array = myShip ? _myFleet : _enemyFleet;
+			var roster:Array = myShip ? _myRoster : _enemyRoster;
+			var grid:DisplayObjectContainer = myShip ? _myGrid : _enemyGrid;
+			
+			/*for each(var point:Point in ship.position){
+				map[point.x][point.y] = 0;
+			}*/
+			
+			fleet.splice(fleet.indexOf(ship), 1);
+			
+			if(myShip){
+				
+				for each(var obj:Object in _myFleetCondensed) {
+					
+					if(obj.shipName == ship.shipName){
+						
+						for each(var point2:Point in ship.position){
+							
+							if(point2.equals(obj.position[0])){
+								_myFleetCondensed.splice(_myFleetCondensed.indexOf(obj), 1);
+								break;
+								
+							}
+						}
+					}
+				}
+			}
+			
+			if(fade)
+				Utils.fadeTo(ship, 1, Transitions.LINEAR, 0.2);
+			else
+				grid.removeChild(ship, true);
+			
+			if(roster.length)
+				roster.splice(roster.indexOf(ship), 1);
+			
 		}
 		
 		
@@ -449,19 +560,10 @@ package game
 			addChild(_phaseMessageContent);
 			
 			//transition effect
-			var tween:Tween = new Tween(messageTxt, 2, Transitions.EASE_IN);
-			tween.delay = 1;
-			tween.animate("alpha", 0);
-			Starling.juggler.add(tween);
-			tween.onComplete = onCompletePhaseMessageTransition;
-			
+			Utils.fadeTo(messageTxt, 0.5, Transitions.EASE_IN);
 			
 		}
 		
-		private function onCompletePhaseMessageTransition():void {
-			
-			removeChild(_phaseMessageContent, true);
-		}
 		
 		private function onEnemyGridTouched(e:TouchEvent):void {
 			
@@ -566,17 +668,6 @@ package game
 			}
 		}
 		
-		private function eraseShip(ship:Ship):void {
-			
-			for each(var point:Point in ship.position){
-				_myMap[point.x][point.y] = 0;
-			}
-			
-			_myFleet.splice(_myFleet.indexOf(ship), 1);
-			_myGrid.removeChild(ship, true);
-			
-		}
-		
 		private function onShipTouch(e:Event, data:Object):void {
 			
 			e.stopImmediatePropagation();
@@ -661,8 +752,8 @@ package game
 			for(var i:int = 0; i < ship.size; i ++){
 				
 				var point:Point = new Point(ship.rotation ? xTile : xTile + i, ship.rotation ? yTile + i: yTile) 
-				_myMap[point.x][point.y] = _shipToPlace.size;
-				_shipToPlace.position.push(point);
+				_myMap[point.x][point.y] = ship.size;
+				ship.position.push(point);
 				
 			}
 			
@@ -844,7 +935,7 @@ package game
 				
 				_totalAttackPower += _shipToPlace.attackPower;
 				
-				eraseShip(_touchedShip);
+				eraseShip(_touchedShip, true);
 				
 				writeShip(_shipToPlace, xP, yP);
 				
