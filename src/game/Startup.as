@@ -1,8 +1,9 @@
-package
+package game
 {
 	import flash.display.Sprite;
 	import flash.display.StageAlign;
 	import flash.display.StageScaleMode;
+	import game.Main;
 	
 	import starling.core.Starling;
 	[SWF(width="700", height="600", frameRate="60", backgroundColor="#1d1d1d")]

@@ -1,7 +1,8 @@
-package
+package game
 {
 	
 	import flash.utils.getTimer;
+	import game.Player;
 	
 	import game.Assets;
 	import game.Game;

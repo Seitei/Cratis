@@ -1,6 +1,7 @@
-package
+package game
 {
 
+	import game.Turns;
 	import netcode.NetConnect;
 	
 	import starling.events.Event;
