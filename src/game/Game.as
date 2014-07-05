@@ -53,8 +53,8 @@ package game
 		private static const AVAILABLE_COST:int = 15;
 		
 		//WRITE //READ //PRODUCTION
-		//private static const ALPHA_SPRITE_MODE:String = "production";
-		private static const ALPHA_SPRITE_MODE:String = "read";
+		private static const ALPHA_SPRITE_MODE:String = "production";
+		//private static const ALPHA_SPRITE_MODE:String = "read";
 		
 		private var _myGrid:Sprite;
 		private var _enemyGrid:Sprite;
