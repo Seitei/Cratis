@@ -25,7 +25,7 @@ package utils
 		
 		public static function fadeTo(dO:DisplayObject, transitionTime:Number, transitionType:String, fade:Number = 0):void {
 			
-			var tween:Tween = new Tween(dO, 1, transitionType);
+			var tween:Tween = new Tween(dO, transitionTime, transitionType);
 			tween.animate("alpha", fade);
 			Starling.juggler.add(tween);
 			
@@ -35,6 +35,14 @@ package utils
 			}
 			
 		}
+
+        public static function moveTo(dO:DisplayObject, xCoord:int, yCoord:int, transitionTime:Number, transitionType:String):void {
+
+            var tween:Tween = new Tween(dO, transitionTime, transitionType);
+            tween.moveTo(xCoord, yCoord);
+            Starling.juggler.add(tween);
+
+        }
 		
 		private static function onCompleteFadeTransition(dO:DisplayObject):void {
 			
@@ -43,4 +51,27 @@ package utils
 		}
 		
 	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

@@ -1,6 +1,5 @@
 package ships
 {
-	import flash.geom.Point;
 	import flash.utils.Dictionary;
 	
 	import ships.Ship;
@@ -14,7 +13,6 @@ package ships
 		private static var _instance:ShipFactory;
 		
 		private var _assetManager:AssetManager;
-		private var _counter:int = 0;
 		private var _playerName:String;
 		private var _stats:Dictionary;
 		private var _shipCounter:int;
@@ -23,12 +21,12 @@ package ships
 		{
 			_stats = new Dictionary();
 			
-			_stats["carrier"]    = [4, 5, 2];
-			_stats["battleship"] = [4, 4, 3];
-			_stats["destroyer"]  = [3, 3, 1];
-			_stats["patrol"]     = [2, 2, 0];
-			_stats["submarine"]  = [2, 3, 3];
-			_stats["cruiser"]    = [2, 3, 1];
+			_stats["carrier"]    = [6, 5, 3];
+			_stats["battleship"] = [4, 4, 2];
+			_stats["destroyer"]  = [4, 3, 3];
+			_stats["patrol"]     = [1, 2, 0];
+			_stats["submarine"]  = [2, 3, 1];
+			_stats["cruiser"]    = [3, 3, 2];
 				
 		}
 		
@@ -51,11 +49,10 @@ package ships
 			
 			var ship:Ship;
 			
-			ship = new Ship(shipName, _stats[shipName][0], _stats[shipName][1], _stats[shipName][2], null, 
-				new Image(_assetManager.getTexture(shipName + "_side_black")),
-				new Image(_assetManager.getTexture(shipName + "_top")),
-				new Image(_assetManager.getTexture(shipName + "_fleet")),
-				state);
+			ship = new Ship(shipName, _stats[shipName][0], _stats[shipName][1], _stats[shipName][2],
+                            new Image(_assetManager.getTexture(shipName)),
+                            new Image(_assetManager.getTexture(shipName + "_roster")),
+                            new Image(_assetManager.getTexture(shipName + "_highlight")),  state);
 				
 			if(position) ship.position = position;
 			

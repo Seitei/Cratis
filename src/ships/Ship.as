@@ -3,26 +3,23 @@ package ships
 	import starling.display.Image;
 	import starling.display.Quad;
 	import starling.display.Sprite;
-	import starling.events.Event;
-	import starling.events.Touch;
+import starling.events.Event;
+import starling.events.Touch;
 	import starling.events.TouchEvent;
 	import starling.events.TouchPhase;
 	import starling.text.TextField;
-	import starling.textures.Texture;
 	import starling.utils.Color;
 	import starling.utils.HAlign;
 	
 	import utils.Border;
-	
-	public class Ship extends Sprite
+import utils.ExtendedButton;
+
+public class Ship extends Sprite
 	{
-		private static var _tileSize:int = 41;
-		private var _shipName:String;
+		private static const UNIT_WIDTH:int = 22;
+		private static const TILE_SIZE:int = 27;
+        private var _shipName:String;
 		private var _size:int;
-		private var _sideView:Image;
-		private var _fleetView:Image;
-		private var _topView:Image;
-		private var _border:Sprite;
 		private var _sunk:Boolean;
 		private var _damage:int;
 		private var _placed:Boolean;
@@ -30,32 +27,32 @@ package ships
 		private var _disable:Quad;
 		private var _attackPower:int;
 		private var _cost:int;
-		private var _special:Special;
 		private var _shipNameTxt:TextField;
 		private var _state:String;
-		private var _sizeBoxesContainer:Sprite;
-		private var _costSquaresContainer:Sprite;
-		private var _attackSquaresContainer:Sprite;
 		private var _id:String;
 		private var _shipFactory:ShipFactory;
-		private var _owner:String;
-		
-		public function Ship(shipName:String, cost:int, size:int, attackPower:int, special:Special, sideView:Image, topView:Image, fleetView:Image, state:String)
+		private var _visual:Image;
+        private var _visualRoster:Image;
+        private var _highlight:Image;
+        private var _deleteShipButton:ExtendedButton;
+
+        [Embed(source="../assets/fonts/consola.ttf", fontName = "Consolas", mimeType = "application/x-font", fontWeight="normal", fontStyle="normal", advancedAntiAliasing="true")]
+        private var myEmbeddedFont:Class;
+
+		public function Ship(shipName:String, cost:int, size:int, attackPower:int, visual:Image, visualRoster:Image, highlight:Image, state:String)
 		{
-			
-			_state = state;
-			_special = special;
+		    _state = state;
 			_cost = cost;
 			_damage = 0;
 			_shipName = shipName;
 			_size = size;
-			_sunk = false;
+            _visual = visual;
+            _visualRoster = visualRoster;
+            _highlight = highlight;
+            _sunk = false;
 			
 			_attackPower = attackPower;
-			_sideView = sideView;
-			_topView = topView;
-			_fleetView = fleetView;
-			
+
 			_placed = false;
 			_position = new Array();
 			
@@ -63,9 +60,9 @@ package ships
 			_disable.alpha = 0.4;
 			_disable.visible = false;
 			addChild(_disable);
-			
-			createState(_state);
-			
+
+            createState(_state);
+
 			this.pivotX = this.width / 2;
 			this.pivotY = this.height / 2;
 			
@@ -74,16 +71,6 @@ package ships
 			
 		}
 		
-		public function get owner():String
-		{
-			return _owner;
-		}
-
-		public function set owner(value:String):void
-		{
-			_owner = value;
-		}
-
 		public function get id():String
 		{
 			return _id;
@@ -96,7 +83,7 @@ package ships
 
 		private function onTouch(e:TouchEvent):void {
 			
-			var endedTouch:Touch = e.getTouch(this, TouchPhase.ENDED); 
+			var endedTouch:Touch = e.getTouch(this, TouchPhase.ENDED);
 			var hoverTouch:Touch = e.getTouch(this, TouchPhase.HOVER);
 			
 			if(hoverTouch)
@@ -129,6 +116,12 @@ package ships
 						shipToPlace = this.clone("placed");
 						action = "showDetails";
 						break;
+
+                    case "toDelete":
+
+                        shipToPlace = null;
+                        action = "delete";
+                        break;
 					
 				}
 				
@@ -149,119 +142,89 @@ package ships
 			
 		}
 		
-		private function createSizeBoxes(size:int):void {
+		private function createUI(size:int):void {
 		
-			_sizeBoxesContainer = new Sprite();
-			//_sizeBoxesContainer.name = this.shipName + "_sizeBoxesContainer";
-			addChild(_sizeBoxesContainer);
-			
-			//horizontals
-			var top:Quad = new Quad(_tileSize * size, 1, Color.WHITE);
-			var bot:Quad = new Quad(_tileSize * size, 1, Color.WHITE);
-			bot.alpha = top.alpha = 0.7;
-			
-			bot.y = _tileSize;
-			
-			_sizeBoxesContainer.addChild(top);
-			_sizeBoxesContainer.addChild(bot);
-			
-			//verticals
-			for(var i:int = 0; i <= size; i++){
-				
-				var vertical:Quad = new Quad(1, _tileSize, Color.WHITE);
-				vertical.alpha = 0.7;
-				vertical.x = i * _tileSize;
-				_sizeBoxesContainer.addChild(vertical);
-				
-			}
-			
+			//cost
+            for(var i:int = 0; i < _cost; i++){
+
+                var costBar:Quad = new Quad(UNIT_WIDTH, 3, 0x138EE2);
+                costBar.alpha = 0.8;
+                costBar.x = i * TILE_SIZE;
+                costBar.y = TILE_SIZE + 15;
+                addChild(costBar);
+
+            }
+
+            for(var i:int = 0; i < _size; i++){
+
+                var grayBox:Sprite = Border.createBorder(22, 7, 0xA7A9AC, 2);
+                grayBox.x = i * TILE_SIZE;
+                grayBox.y = TILE_SIZE + 5;
+                addChild(grayBox);
+
+
+            }
+
+            for(var i:int = 0; i < _attackPower; i++){
+
+                var redQuad:Quad = new Quad(18, 4, 0xEF414E);
+                redQuad.x = i * TILE_SIZE + 2;
+                redQuad.y = TILE_SIZE + 6;
+                addChild(redQuad);
+
+            }
+
+
 		}
-		
-		private function createCostSquares():void {
-			
-			_costSquaresContainer = new Sprite();
-			addChild(_costSquaresContainer);
-			
-			for(var i:int = 0; i < _cost; i++){
-				
-				var costQuadContainer:Sprite = new Sprite();
-				var costQuad:Quad = new Quad(8, 8, 0x00AEEF);
-				costQuadContainer.x = i * 10;
-				costQuadContainer.addChild(costQuad);
-				Border.createBorder(Number.NaN, Number.NaN, Color.BLACK, 1, costQuadContainer);
-				_costSquaresContainer.addChild(costQuadContainer);
-				
-			}
-			
-			_costSquaresContainer.x = _sizeBoxesContainer.width - _costSquaresContainer.width; 
-			_costSquaresContainer.y = -_costSquaresContainer.height - 3;
-		}
-		
-		private function createAttackSquares():void {
-			
-			_attackSquaresContainer = new Sprite();
-			addChild(_attackSquaresContainer);
-			
-			for(var i:int = 0; i < _attackPower; i++){
-				
-				var attackQuadContainer:Sprite = new Sprite();
-				var attackQuad:Quad = new Quad(8, 8, 0xEA5639);
-				attackQuadContainer.x = i * 10;
-				attackQuadContainer.addChild(attackQuad);
-				Border.createBorder(Number.NaN, Number.NaN, Color.BLACK, 1, attackQuadContainer);
-				_attackSquaresContainer.addChild(attackQuadContainer);
-				
-			}
-			
-			_attackSquaresContainer.y = _sizeBoxesContainer.height + 3;
-				
-		}
-		
+
 		private function createState(state:String):void {
 			
-			switch(state) {
-				
+            switch(state) {
+
 				//(picking phase)
 				case "detailed":
-					
-					createSizeBoxes(size);
-					createCostSquares();
-					createAttackSquares();
-					addChild(_sideView);
-					
-					_shipNameTxt = new TextField(75, 20, this.shipName.toUpperCase(), "Consolas", 12, Color.BLACK);
+
+                    addChild(_visual);
+                    _highlight.visible = false;
+                    addChild(_highlight);
+
+                    createUI(size);
+
+					_shipNameTxt = new TextField(75, 20, this.shipName.toUpperCase(), "Consolas", 11, 0xA7A9AC);
 					_shipNameTxt.hAlign = HAlign.LEFT;
 					_shipNameTxt.y = - _shipNameTxt.height;
-					
-					_border = Border.createBorder(this.width, _tileSize + 1, Color.WHITE, 1.5);
-					addChild(_border);
-					_border.visible = false;
-					
+
 					addChild(_shipNameTxt);
 						
 					break;
 				
-				//(top view)
 				case "placed":
-					
-					addChild(_topView);
-					
-					_border = Border.createBorder(this.width, this.height, Color.WHITE, 1.5);
-					addChild(_border);
-					_border.visible = false;
-					
-					break;
-				
-				//(your current ships)
+
+                    addChild(_visual);
+                    _highlight.visible = false;
+                    addChild(_highlight);
+
+                    //delete button
+                    var upState:Image = new Image(Main.getInstance().assetManager.getTexture("delete_ship_button_up"));
+                    upState.name = "up0000";
+                    var hoverState:Image = new Image(Main.getInstance().assetManager.getTexture("delete_ship_button_hover"));
+                    hoverState.name = "hover0000";
+                    var downState:Image = new Image(Main.getInstance().assetManager.getTexture("delete_ship_button_hover"));
+                    downState.name = "down0000";
+
+                    var buttonsStates:Array = new Array();
+                    buttonsStates.push(upState, downState, hoverState);
+
+                    _deleteShipButton = new ExtendedButton(buttonsStates);
+                    _deleteShipButton.addEventListener("buttonTriggeredEvent", onShipDeleted);
+                    addChild(_deleteShipButton);
+
+                    break;
+
 				case "fleet":
-					
-					addChild(_fleetView);
-				
-					_border = Border.createBorder(this.width, this.height, Color.WHITE, 1.5);
-					addChild(_border);
-					_border.visible = false;
-					
-					break;
+
+                    addChild(_visualRoster);
+        			break;
 				
 				
 			}
@@ -269,6 +232,18 @@ package ships
 			
 			
 		}
+
+        public function showDeleteButton(value:Boolean):void {
+
+            _deleteShipButton.visible = false;
+
+        }
+
+        private function onShipDeleted(e:Event){
+
+            _state = "toDelete";
+
+        }
 		
 		public function get state():String
 		{
@@ -280,34 +255,14 @@ package ships
 			_state = value;
 		}
 
-		public function get special():Special
-		{
-			return _special;
-		}
-
-		public function set special(value:Special):void
-		{
-			_special = value;
-		}
-
 		public function get cost():int
 		{
 			return _cost;
 		}
 
-		public function set cost(value:int):void
-		{
-			_cost = value;
-		}
-
 		public function get attackPower():int
 		{
 			return _attackPower;
-		}
-
-		public function set attackPower(value:int):void
-		{
-			_attackPower = value;
 		}
 
 		public function disable():void {
@@ -362,33 +317,34 @@ package ships
 			_sunk = value;
 		}
 
-		
-
 		private function highlight(value:Boolean):void {
-			
-			_border.visible = value;
-			
+
+            switch(state) {
+
+                case "detailed":
+
+                    _shipNameTxt.color = value ? Color.BLACK : 0xA7A9AC;
+                    _highlight.visible = value;
+                     break;
+
+                case "placed":
+
+                    _highlight.visible = value;
+                    break;
+
+            }
+
 		}
-		
-		
+
 		public function get size():int
 		{
 			return _size;
 		}
 
-		public function set size(value:int):void
-		{
-			_size = value;
-		}
 
 		public function get shipName():String
 		{
 			return _shipName;
-		}
-
-		public function set shipName(value:String):void
-		{
-			_shipName = value;
 		}
 
 	}

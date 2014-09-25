@@ -1,8 +1,6 @@
 package utils
 {
-	import flash.display3D.IndexBuffer3D;
 	import flash.events.Event;
-	import flash.filters.DisplacementMapFilter;
 	import flash.geom.Point;
 	import flash.geom.Rectangle;
 	import flash.net.FileReference;
@@ -12,14 +10,10 @@ package utils
 	import flash.ui.Keyboard;
 	import flash.utils.ByteArray;
 	import flash.utils.Dictionary;
-	import flash.xml.XMLNode;
-	
-	import starling.core.Starling;
+
 	import starling.display.DisplayObject;
 	import starling.display.DisplayObjectContainer;
 	import starling.display.Quad;
-	import starling.display.Sprite;
-	import starling.display.Stage;
 	import starling.events.KeyboardEvent;
 	import starling.events.Touch;
 	import starling.events.TouchEvent;
@@ -53,7 +47,8 @@ package utils
 		private var _childrenListeners:Dictionary;
 		private var _scanCompleted:Boolean = false;
 		private var _data:XML;
-		
+		private var _copy:Boolean;
+
 		public function AlphaSprite()
 		{
 			_displayObjectsDic = new Dictionary();
@@ -110,6 +105,10 @@ package utils
 					}
 				}
 			}
+
+            if(_copy){
+                copyDataToSharedObject();
+            }
 		}
 		
 		
@@ -515,20 +514,42 @@ package utils
 				_snappedY = false;
 					
 			}
-			
 		}
-			
-		
-		
+
+        /**
+        * Copies the content of the xml (production) to the sharedObject. Useful when other dev uses the project.
+        **/
+        public function copyFromXml(e:KeyboardEvent):void {
+
+            if(e.keyCode == Keyboard.C) {
+
+                _copy = true;
+                var myLoader:URLLoader = new URLLoader();
+                myLoader.load(new URLRequest("data.xml"));
+                myLoader.addEventListener(Event.COMPLETE, processData);
+
+            }
+
+        }
+
+        private function copyDataToSharedObject():void {
+
+            for each(var dO:DisplayObject in _displayObjectsArray) {
+
+                _selectedDo = dO;
+                saveData();
+
+            }
+        }
 		
 		public function init(object:DisplayObjectContainer, mode:String):void {
 			
 			_mode = mode;
 			_doContainer = object;
 			_doContainer.addEventListener(KeyboardEvent.KEY_UP, writeXML);
-			
+
 			recurseStage(object);
-			
+
 			if(_mode == "production"){
 				var myLoader:URLLoader = new URLLoader();
 				myLoader.load(new URLRequest("data.xml"));
@@ -539,8 +560,9 @@ package utils
 		}
 		
 		private function setWriteMode():void {
-			
-			_doContainer.addEventListener(KeyboardEvent.KEY_DOWN, onMoveObject);
+
+            _doContainer.addEventListener(KeyboardEvent.KEY_UP, copyFromXml);
+            _doContainer.addEventListener(KeyboardEvent.KEY_DOWN, onMoveObject);
 			_doContainer.addEventListener(KeyboardEvent.KEY_UP, onFinishedMovingObject);
 			_doContainer.addEventListener(KeyboardEvent.KEY_DOWN, showAlpha);
 			

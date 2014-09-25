@@ -3,9 +3,10 @@ package
 	import flash.display.Sprite;
 	import flash.display.StageAlign;
 	import flash.display.StageScaleMode;
-	
+
 	import starling.core.Starling;
-	[SWF(width="700", height="600", frameRate="60", backgroundColor="#1d1d1d")]
+
+[SWF(width="670", height="585", frameRate="60", backgroundColor="#F4F4F4")]
 	public class Startup extends Sprite
 	{
 		private var mStarling:Starling;
