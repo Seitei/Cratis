@@ -35,6 +35,10 @@ package netcode
 		private const DEVKEY:String = "cde41fe05bb01817e82e5398-2ab5d983d09f"; 
 		private const NAME:String = "Artemix";
 		
+		private const HOST_NAME:String = "http://localhost";
+		//private const HOST_NAME:String = "http://konku.local";
+		//private const HOST_NAME:String = "http://www.konkugames.com";
+		
 		private var _cirrusNc:NetConnection;
 		private var _amfphpNc:NetConnection;
 		
@@ -112,8 +116,7 @@ package netcode
 		private function onCirrusConnect():void {
 			//connecting to amfphp
 			_amfphpNc = new NetConnection();
-			_amfphpNc.connect("http://localhost/Amfphp/");
-			//_amfphpNc.connect("http://www.konkugames.com/Amfphp/");
+			_amfphpNc.connect(HOST_NAME + "/Amfphp/");
 			_res = new Responder(onResult, onFault);
 			_amfphpNc.call("Rendezvous.match", _res, NAME, _cirrusNc.nearID);
 			
