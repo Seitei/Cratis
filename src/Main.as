@@ -1,5 +1,5 @@
-package
-{
+package {
+
 	
 	import game.Assets;
 	import game.BattleShip;

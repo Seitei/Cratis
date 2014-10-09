@@ -1,5 +1,5 @@
-package game
-{
+package {
+import game.*;
 
 	import game.Turns;
 	import netcode.NetConnect;
