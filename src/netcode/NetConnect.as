@@ -51,16 +51,26 @@ import flash.net.Responder;
 		private var _res:Responder;
 		private var _message:Object;
         private var _groupSpecifier:GroupSpecifier;
+        private var _groupSpecifier2:GroupSpecifier;
 		private var _netGroup:NetGroup;
+        private var _netGroup2:NetGroup;
 
 		public function NetConnect():void {
 
+            //server!
             _groupSpecifier = new GroupSpecifier("com.konkugames.battleship_group");
             _groupSpecifier.multicastEnabled = true;
             _groupSpecifier.postingEnabled = true;
             _groupSpecifier.objectReplicationEnabled = true;
             _groupSpecifier.routingEnabled = true;
             _groupSpecifier.serverChannelEnabled = true;
+
+            _groupSpecifier2 = new GroupSpecifier("com.konkugames.battleship_group2");
+            _groupSpecifier2.multicastEnabled = true;
+            _groupSpecifier2.postingEnabled = true;
+            _groupSpecifier2.objectReplicationEnabled = true;
+            _groupSpecifier2.routingEnabled = true;
+            _groupSpecifier2.serverChannelEnabled = true;
 
 			_message = new Object();
 			_status = "waiting";
@@ -123,10 +133,15 @@ import flash.net.Responder;
 			_res = new Responder(onResult, onFault);
 			_amfphpNc.call("Rendezvous.match", _res, NAME, _cirrusNc.nearID);*/
 
-
+            trace(_groupSpecifier.groupspecWithoutAuthorizations());
             _netGroup = new NetGroup(_cirrusNc, _groupSpecifier.groupspecWithoutAuthorizations());
             _netGroup.addEventListener( NetStatusEvent.NET_STATUS, onNetGroupStatus );
-            trace(_netGroup.estimatedMemberCount);
+            trace(_groupSpecifier2.groupspecWithoutAuthorizations());
+            _netGroup2 = new NetGroup(_cirrusNc, _groupSpecifier2.groupspecWithoutAuthorizations());
+            _netGroup2.addEventListener( NetStatusEvent.NET_STATUS, onNetGroupStatus );
+
+
+
 
 
 
@@ -135,15 +150,16 @@ import flash.net.Responder;
         private function onNetGroupStatus(e:NetStatusEvent):void {
 
             trace("NETGROUP INFO: ", e.info.code);
+            return;
 
             switch(e.info.code) {
 
                 case "NetGroup.Neighbor.Connect":
-                    evaluateNeighbourConnect(e);
+                    //evaluateNeighbourConnect(e);
                     break;
 
                 case "NetGroup.Posting.Notify":
-                    evaluatePostedMessage(e);
+                   // evaluatePostedMessage(e);
 
                     break;
 
