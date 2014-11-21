@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="Starling" type="flex">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/libs/starling/src" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

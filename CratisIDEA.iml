@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="Flex" version="4">
+  <component name="FlexBuildConfigurationManager" active="Cratis">
+    <configurations>
+      <configuration name="Cratis" main-class="Startup" output-file="Cratis.swf" output-folder="$MODULE_DIR$/bin-debug">
+        <dependencies target-player="13.0">
+          <entries>
+            <entry library-name="src" library-level="project">
+              <dependency linkage="Merged" />
+            </entry>
+            <entry library-id="f955fcf9-e41a-4484-872e-6c36496cce9d">
+              <dependency linkage="Merged" />
+            </entry>
+          </entries>
+          <sdk name="flex_sdk_4.6_Air13" />
+        </dependencies>
+        <compiler-options />
+        <packaging-air-desktop />
+        <packaging-android />
+        <packaging-ios />
+      </configuration>
+    </configurations>
+    <compiler-options />
+  </component>
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+    </content>
+    <orderEntry type="jdk" jdkName="flex_sdk_4.6_Air13" jdkType="Flex SDK Type (new)" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" exported="" name="starling" level="project" />
+    <orderEntry type="library" exported="" name="src" level="project" />
+    <orderEntry type="module-library" exported="">
+      <library type="flex">
+        <properties id="f955fcf9-e41a-4484-872e-6c36496cce9d" />
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/libs/pixelmask-master/src" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+  </component>
+</module>
+

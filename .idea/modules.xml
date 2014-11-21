@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/../Battleship/Battleship.iml" filepath="$PROJECT_DIR$/../Battleship/Battleship.iml" />
+      <module fileurl="file://$PROJECT_DIR$/Cratis.iml" filepath="$PROJECT_DIR$/Cratis.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Hangmen/Hangmen.iml" filepath="$PROJECT_DIR$/../Hangmen/Hangmen.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Truco/Truco.iml" filepath="$PROJECT_DIR$/../Truco/Truco.iml" />
+    </modules>
+  </component>
+</project>
+
