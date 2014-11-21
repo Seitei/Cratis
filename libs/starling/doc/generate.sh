@@ -11,7 +11,7 @@ ASDOC="$HOME/Dropbox/Development/library/flash/air/air-3.8_beta/bin/asdoc"
 
 "${ASDOC}" \
   -doc-sources ../src \
-  -exclude-classes com.adobe.utils.AGALMiniAssembler \
+  -exclude-classes com.adobe.helpers.AGALMiniAssembler \
   -main-title "Starling Framework Reference (v$version)" \
   -window-title "Starling Framework Reference" \
   -package starling.animation "The components of Starlings animation system." \
@@ -21,7 +21,7 @@ ASDOC="$HOME/Dropbox/Development/library/flash/air/air-3.8_beta/bin/asdoc"
   -package starling.events "A simplified version of Flash's DOM event model, including an alternative EventDispatcher base class." \
   -package starling.text "Classes for working with text fields and bitmap fonts." \
   -package starling.textures "Classes to create and work with GPU texture data." \
-  -package starling.utils "Utility classes and helper methods." \
+  -package starling.helpers "Utility classes and helper methods." \
   -package starling.filters "Post processing filters for special effects." \
   -output html
 

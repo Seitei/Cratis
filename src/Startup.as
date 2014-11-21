@@ -16,6 +16,7 @@ package {
 			stage.scaleMode = StageScaleMode.NO_SCALE;
 			// create our Starling instance
 			mStarling = new Starling(Main, stage);
+            //mStarling = new Starling(UserStub, stage);
 			// set anti-aliasing (higher the better quality but slower performance)
 			mStarling.antiAliasing = 4;
 			

@@ -1,9 +1,9 @@
 <root>
   <dO>
-    <name>hp_bar</name>
+    <name>cruiser_alpha</name>
     <properties>
-      <y>372</y>
-      <x>2</x>
+      <y>532.5</y>
+      <x>537.5</x>
     </properties>
   </dO>
 </root>

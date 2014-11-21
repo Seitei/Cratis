@@ -1,11 +1,8 @@
-package game
+package entities
 {
 	import flash.utils.Dictionary;
 	
 	import starling.events.EventDispatcher;
-	import starling.utils.AssetManager;
-	
-	import utils.Utils;
 
 	public class Turns extends EventDispatcher
 	{
@@ -13,15 +10,14 @@ package game
 		private var _currentState:int;
 		private var _state:String;
 		private var _states:Dictionary;
-		private var _stateName:String;
 		private var _stateNames:Array;
 		private var _enemyTurnEnded:Boolean;
 		private var _myTurnEnded:Boolean;
 		private var _phaseChangeMessageShown:Boolean;
-		
-		public function Turns() 
+
+		public function Turns()
 		{
-			_states = new Dictionary();
+       		_states = new Dictionary();
 			_stateNames = new Array();
 		}
 		
@@ -33,6 +29,7 @@ package game
 			
 			if(_myTurnEnded)
 				result();
+
 		}
 		
 		//TODO
