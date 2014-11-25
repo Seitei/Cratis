@@ -43,9 +43,9 @@ import starling.utils.AssetManager;
 		{
             _instance = this;
 
-            ExternalInterface.addCallback("init", init);
+            /*ExternalInterface.addCallback("init", init);
             ExternalInterface.addCallback("loadGame", selectGame);
-            ExternalInterface.addCallback("changeGame", changeGame);
+            ExternalInterface.addCallback("changeGame", changeGame);*/
 
             _assetManager = new AssetManager();
 			addEventListener(starling.events.Event.ADDED_TO_STAGE, onAdded);
@@ -88,7 +88,7 @@ import starling.utils.AssetManager;
         private function onAdded(e:starling.events.Event):void {
 
             //addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
-            ExternalInterface.call("JSListener.cratisConstructionComplete();");
+            //ExternalInterface.call("JSListener.cratisConstructionComplete();");
 
         }
 
@@ -138,18 +138,18 @@ import starling.utils.AssetManager;
 
         private function onGmeAssetsLoadingProgress(e:Event, ratio:Number):void {
 
-            ExternalInterface.call("gameLoadProgress", Math.floor(ratio * 100));
+            //ExternalInterface.call("gameLoadProgress", Math.floor(ratio * 100));
 
         }
 
 
         private function onSendData(e:Event, data:Object):void {
 
-            for( var netGroup:NetGroup in _games){
+            for( var netGroup:Object in _games){
 
                 if(_games[netGroup] == data.game){
 
-                    _nc.sendMessage(netGroup, data.data, "action");
+                    _nc.sendMessage(netGroup as NetGroup, data.data, "action");
 
                 }
 
