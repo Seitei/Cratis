@@ -43,9 +43,9 @@ import starling.utils.AssetManager;
 		{
             _instance = this;
 
-            /*ExternalInterface.addCallback("init", init);
+            ExternalInterface.addCallback("init", init);
             ExternalInterface.addCallback("loadGame", selectGame);
-            ExternalInterface.addCallback("changeGame", changeGame);*/
+            ExternalInterface.addCallback("changeGame", changeGame);
 
             _assetManager = new AssetManager();
 			addEventListener(starling.events.Event.ADDED_TO_STAGE, onAdded);
@@ -60,7 +60,7 @@ import starling.utils.AssetManager;
             _games = new Dictionary();
             _auxArray = new Array();
 
-            //addEventListener("nameSelected", onNameSelected);
+            addEventListener("nameSelected", onNameSelected);
             addEventListener("gameConstructionComplete", onGameConstructionComplete);
 
 		}
@@ -79,16 +79,22 @@ import starling.utils.AssetManager;
             _nc = new NetConnect(_userName);
             _nc.addEventListener("matchInfoReceived", onMatchInfoReceived);
             _nc.addEventListener("postingNotify", onPostingNotify);
+            _nc.addEventListener("playerConnected", onPlayerConnected);
 
             _player = new Player(selectedName);
 
         }
 
+        private function onPlayerConnected():void {
+
+
+
+        }
 
         private function onAdded(e:starling.events.Event):void {
 
             //addEventListener(KeyboardEvent.KEY_DOWN, onKeyDown);
-            //ExternalInterface.call("JSListener.cratisConstructionComplete();");
+            ExternalInterface.call("JSListener.cratisConstructionComplete", []);
 
         }
 
@@ -121,12 +127,19 @@ import starling.utils.AssetManager;
 
         }
 
+        private function onTurnStart(gameId:String):void {
+
+            ExternalInterface.call("turnStart", [gameId]);
+
+        }
+
         private function onGameLoadComplete(classInfo:Object, matchData):void {
 
            var game:Sprite = new classInfo["gameClass"](_player, _assetManager, matchData.matchID, matchData.gameID);
            addChild(game);
 
            game.addEventListener("sendData", onSendData);
+           game.addEventListener("turnStart", onTurnStart);
            game.addEventListener("gameAssetsLoadingProgress", onGmeAssetsLoadingProgress);
 
            _games[matchData.netGroup] = game;
@@ -136,30 +149,36 @@ import starling.utils.AssetManager;
 
         }
 
-        private function onGmeAssetsLoadingProgress(e:Event, ratio:Number):void {
+        private function onGmeAssetsLoadingProgress(e:Event, data:Object):void {
 
-            //ExternalInterface.call("gameLoadProgress", Math.floor(ratio * 100));
+            ExternalInterface.call("gameLoadProgress", [Math.floor(data.ratio * 100), data.gameID]);
 
         }
 
 
         private function onSendData(e:Event, data:Object):void {
 
-            for( var netGroup:Object in _games){
+             _nc.sendMessage(locateNetGroup(data.game), data.data, "action");
 
-                if(_games[netGroup] == data.game){
-
-                    _nc.sendMessage(netGroup as NetGroup, data.data, "action");
-
-                }
-
-
-            }
         }
 
-        private function onGameConstructionComplete(e:Event, game:Sprite):void {
+        private function locateNetGroup(game:Sprite):NetGroup {
 
-            game.visible = true;
+            for( var netGroup:Object in _games){
+
+                if(_games[netGroup] == game){
+
+                    return netGroup as NetGroup;
+
+                }
+            }
+
+            return null;
+        }
+
+        private function onGameConstructionComplete(e:Event, game:iGame):void {
+
+            _nc.sendMessage(locateNetGroup(game as Sprite), {gameID: game.gameID, userName: _userName}, "playerFinishedLoading");
 
         }
 
@@ -180,7 +199,9 @@ import starling.utils.AssetManager;
                 var playerAlreadyAdded:Boolean = _games[data.netGroup].addPlayer(player);
 
                 if(!playerAlreadyAdded){
-                    //notify the web that a new player has connected
+
+                    ExternalInterface.call("JSListener.playerConnected", [data.gameID, data.userName, true]);
+
                 }
 
             }
@@ -188,6 +209,13 @@ import starling.utils.AssetManager;
             if(data.message.type == "action"){
 
                 _games[data.netGroup].onEnemyTurnEnd(data.message);
+                ExternalInterface.call("JSListener.onPlayerTurnEnded", [data.gameID, data.userName, true]);
+
+            }
+
+            if(data.message.type == "playerFinishedLoading"){
+
+                ExternalInterface.call("JSListener.playerFinishedLoading", [data.gameID, data.userName, true]);
 
             }
 

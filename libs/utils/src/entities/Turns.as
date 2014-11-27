@@ -14,9 +14,11 @@ package entities
 		private var _enemyTurnEnded:Boolean;
 		private var _myTurnEnded:Boolean;
 		private var _phaseChangeMessageShown:Boolean;
+		private var _gameID:String;
 
-		public function Turns()
+		public function Turns(gameID:String)
 		{
+			_gameID = gameID;
        		_states = new Dictionary();
 			_stateNames = new Array();
 		}
@@ -64,8 +66,8 @@ package entities
 			_myTurnEnded = false;
 			_enemyTurnEnded = false;
 			executeTurn("start");
-				
-			
+			dispatchEventWith("turnStart", false, _gameID);
+
 		}
 		
 		public function result():void {
@@ -122,9 +124,11 @@ package entities
 			
 			
 		}
-		
-			
-		 
+
+
+		public function get gameID():String {
+			return _gameID;
+		}
 	}
 	
 	
