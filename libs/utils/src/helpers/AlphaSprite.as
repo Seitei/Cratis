@@ -249,7 +249,8 @@ package helpers
 						
 					}
 					
-					data.dO = dO;	
+					data.appendChild(dO);
+
 				}
 				
 				var ba:ByteArray = new ByteArray();
